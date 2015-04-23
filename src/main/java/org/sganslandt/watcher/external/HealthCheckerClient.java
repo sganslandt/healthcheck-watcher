@@ -4,11 +4,11 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.core.GenericType;
 import java.util.Map;
 
-public class HealthChecker {
+public class HealthCheckerClient {
 
     private final Client client;
 
-    public HealthChecker(final Client client) {
+    public HealthCheckerClient(final Client client) {
         this.client = client;
     }
 
