@@ -39,7 +39,6 @@ public class Application extends io.dropwizard.Application<Configuration> {
 
         eventBus.register(resource);
 
-        environment.jersey().register(healthCheckerClient);
         environment.jersey().register(resource);
     }
 

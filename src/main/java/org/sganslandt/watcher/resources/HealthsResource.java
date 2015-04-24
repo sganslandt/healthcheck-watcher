@@ -50,10 +50,10 @@ public class HealthsResource {
 
     @GET
     @Timed
-    public Iterable<Healths> healths() {
-        return transform(serviceHealths.entrySet(), new Function<Map.Entry<String, Map<String, Map<String, HealthResult>>>, Healths>() {
+    public Iterable<ServiceHealths> healths() {
+        return transform(serviceHealths.entrySet(), new Function<Map.Entry<String, Map<String, Map<String, HealthResult>>>, ServiceHealths>() {
             @Override
-            public Healths apply(final Map.Entry<String, Map<String, Map<String, HealthResult>>> input) {
+            public ServiceHealths apply(final Map.Entry<String, Map<String, Map<String, HealthResult>>> input) {
                 final LinkedList<InstanceHealths> serviceHealths = new LinkedList<InstanceHealths>();
                 serviceHealths.addAll(Collections2.transform(input.getValue().entrySet(), new Function<Map.Entry<String, Map<String, HealthResult>>, InstanceHealths>() {
                     @Override
@@ -61,7 +61,7 @@ public class HealthsResource {
                         return new InstanceHealths(input.getKey(), input.getValue());
                     }
                 }));
-                return new Healths(input.getKey(), serviceHealths);
+                return new ServiceHealths(input.getKey(), serviceHealths);
             }
         });
     }
