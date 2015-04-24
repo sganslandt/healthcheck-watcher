@@ -1,6 +1,9 @@
 package org.sganslandt.watcher.core;
 
 import com.google.common.eventbus.EventBus;
+import org.sganslandt.watcher.core.events.HealthChangedEvent;
+import org.sganslandt.watcher.core.events.ServiceAddedEvent;
+import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 import org.sganslandt.watcher.external.HealthResult;
 
@@ -31,6 +34,55 @@ public class HealthChecker {
         }, 5, 5, TimeUnit.SECONDS);
     }
 
+    /**
+     * Add a service to the registry. Signals that service is part of the system, but is
+     * not yet deployed or we don't know where it is yet.
+     *
+     * @param serviceName Name of the service
+     */
+    public void addService(String serviceName) {
+        servicesToWatch.put(serviceName, new LinkedList<String>());
+        eventBus.post(new ServiceAddedEvent(serviceName));
+    }
+
+    /**
+     * Start monitoring an instance of a service.
+     *
+     * @param serviceName Name of the service
+     * @param url Root URL of the newly deployed version of the service
+     */
+    public void monitor(String serviceName, String url) {
+        synchronized (servicesToWatch) {
+            if (!servicesToWatch.containsKey(serviceName))
+                addService(serviceName);
+
+            servicesToWatch.get(serviceName).add(url);
+        }
+    }
+
+    /**
+     * Stop monitoring a specific instance of a service.
+     *
+     * @param serviceName Name of the service
+     * @param url Root URL of the instance to stop monitoring
+     */
+    public void stopMonitoring(String serviceName, String url) {
+        if (!servicesToWatch.containsKey(serviceName))
+            return;
+
+        servicesToWatch.get(serviceName).remove(url);
+    }
+
+    /**
+     * Completely remove a service from the system.
+     *
+     * @param serviceName Name of the service
+     */
+    public void removeService(String serviceName) {
+        servicesToWatch.remove(serviceName);
+        eventBus.post(new ServiceRemovedEvent(serviceName));
+    }
+
     private void checkAll() {
         for (Map.Entry<String, List<String>> entry : servicesToWatch.entrySet()) {
             final String serviceName = entry.getKey();
@@ -39,26 +91,6 @@ public class HealthChecker {
                 eventBus.post(new HealthChangedEvent(serviceName, url, healthResult));
             }
         }
-    }
-
-    public void monitor(String serviceName, String url) {
-        synchronized (servicesToWatch) {
-            if (!servicesToWatch.containsKey(serviceName))
-                servicesToWatch.put(serviceName, new LinkedList<String>());
-
-            servicesToWatch.get(serviceName).add(url);
-        }
-    }
-
-    public void stopMonitoring(String serviceName, String url) {
-        if (!servicesToWatch.containsKey(serviceName))
-            return;
-
-        servicesToWatch.get(serviceName).remove(url);
-    }
-
-    public void removeService(String serviceName) {
-        servicesToWatch.remove(serviceName);
     }
 
 }

@@ -1,13 +1,12 @@
 package org.sganslandt.watcher.resources;
 
-import org.sganslandt.watcher.external.HealthResult;
 import lombok.Data;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 final class Healths {
     private final String serviceName;
-    private final String serviceUrl;
-    private final Map<String, HealthResult> healths;
+    private final String state = "N/A";
+    private final List<InstanceHealths> instances;
 }
