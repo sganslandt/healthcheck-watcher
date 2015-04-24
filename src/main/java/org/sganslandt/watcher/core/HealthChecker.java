@@ -22,13 +22,16 @@ public class HealthChecker {
 
     private final ScheduledThreadPoolExecutor scheduler;
 
+    private final Map<String, Map<String, HealthResult>> recordedResults;
+
     public HealthChecker(final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
         this.healthCheckerClient = healthCheckerClient;
         this.eventBus = eventBus;
         this.servicesToWatch = new ConcurrentHashMap<>();
+        this.recordedResults = new ConcurrentHashMap<>();
 
-        scheduler = new ScheduledThreadPoolExecutor(100);
-        scheduler.scheduleAtFixedRate(new Runnable() {
+        this.scheduler = new ScheduledThreadPoolExecutor(100);
+        this.scheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 checkAll();
@@ -101,7 +104,10 @@ public class HealthChecker {
 
     private void check(String serviceName, String url) {
         final Map<String, HealthResult> healthResult = healthCheckerClient.check(url);
-        eventBus.post(new HealthChangedEvent(serviceName, url, healthResult));
+        if (!(recordedResults.containsKey(url) && recordedResults.get(url).equals(healthResult))) {
+            eventBus.post(new HealthChangedEvent(serviceName, url, healthResult));
+            recordedResults.put(url, healthResult);
+        }
     }
 
 }
