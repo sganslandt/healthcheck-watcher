@@ -27,6 +27,6 @@ public final class Node {
     }
 
     public static enum State {
-        Starting, Running, Stopping, Unknown
+        Healthy, Unhealthy, Unknown
     }
 }
