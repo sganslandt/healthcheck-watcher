@@ -5,7 +5,6 @@ import org.sganslandt.watcher.core.events.HealthChangedEvent;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
-import org.sganslandt.watcher.external.HealthResult;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -16,19 +15,20 @@ import java.util.concurrent.TimeUnit;
 
 public class HealthChecker {
 
-    private final Map<String, List<String>> servicesToWatch;
+    // Dependencies
     private final HealthCheckerClient healthCheckerClient;
     private final EventBus eventBus;
-
     private final ScheduledThreadPoolExecutor scheduler;
 
-    private final Map<String, Map<String, HealthResult>> recordedResults;
+    // Data
+    private final Map<String, List<String>> servicesToWatch;
+    private final Map<String, Map<String, Health>> nodeHealths;
 
     public HealthChecker(final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
         this.healthCheckerClient = healthCheckerClient;
         this.eventBus = eventBus;
         this.servicesToWatch = new ConcurrentHashMap<>();
-        this.recordedResults = new ConcurrentHashMap<>();
+        this.nodeHealths = new ConcurrentHashMap<>();
 
         this.scheduler = new ScheduledThreadPoolExecutor(100);
         this.scheduler.scheduleAtFixedRate(new Runnable() {
@@ -51,7 +51,7 @@ public class HealthChecker {
     }
 
     /**
-     * Start monitoring an instance of a service.
+     * Start monitoring a node of a service.
      *
      * @param serviceName Name of the service
      * @param url         Root URL of the newly deployed version of the service
@@ -66,10 +66,10 @@ public class HealthChecker {
     }
 
     /**
-     * Stop monitoring a specific instance of a service.
+     * Stop monitoring a specific node of a service.
      *
      * @param serviceName Name of the service
-     * @param url         Root URL of the instance to stop monitoring
+     * @param url         Root URL of the node to stop monitoring
      */
     public void stopMonitoring(String serviceName, String url) {
         if (!servicesToWatch.containsKey(serviceName))
@@ -103,10 +103,10 @@ public class HealthChecker {
     }
 
     private void check(String serviceName, String url) {
-        final Map<String, HealthResult> healthResult = healthCheckerClient.check(url);
-        if (!(recordedResults.containsKey(url) && recordedResults.get(url).equals(healthResult))) {
-            eventBus.post(new HealthChangedEvent(serviceName, url, healthResult));
-            recordedResults.put(url, healthResult);
+        final Map<String, Health> nodeHealths = healthCheckerClient.check(url);
+        if (!(this.nodeHealths.containsKey(url) && this.nodeHealths.get(url).equals(nodeHealths))) {
+            eventBus.post(new HealthChangedEvent(serviceName, url, nodeHealths));
+            this.nodeHealths.put(url, nodeHealths);
         }
     }
 

@@ -5,10 +5,12 @@ import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
 import com.google.common.eventbus.Subscribe;
+import org.sganslandt.watcher.core.Health;
 import org.sganslandt.watcher.core.HealthChecker;
+import org.sganslandt.watcher.core.Node;
+import org.sganslandt.watcher.core.Service;
 import org.sganslandt.watcher.core.events.HealthChangedEvent;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
-import org.sganslandt.watcher.external.HealthResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,7 @@ public class HealthsResource {
 
     private final HealthChecker healthChecker;
 
-    private final Map<String, Map<String, Map<String, HealthResult>>> serviceHealths;
+    private final Map<String, Map<String, Map<String, Health>>> serviceHealths;
 
     public HealthsResource(final HealthChecker healthChecker) {
         this.healthChecker = healthChecker;
@@ -39,7 +41,7 @@ public class HealthsResource {
     @Subscribe
     public void handle(ServiceAddedEvent event) {
         log.info("Received {}", event);
-        serviceHealths.put(event.getServiceName(), new HashMap<String, Map<String, HealthResult>>());
+        serviceHealths.put(event.getServiceName(), new HashMap<String, Map<String, Health>>());
     }
 
     @Subscribe
@@ -50,18 +52,43 @@ public class HealthsResource {
 
     @GET
     @Timed
-    public Iterable<ServiceHealths> healths() {
-        return transform(serviceHealths.entrySet(), new Function<Map.Entry<String, Map<String, Map<String, HealthResult>>>, ServiceHealths>() {
+    public Iterable<Service> healths() {
+        return transform(serviceHealths.entrySet(), new Function<Map.Entry<String, Map<String, Map<String, Health>>>, Service>() {
             @Override
-            public ServiceHealths apply(final Map.Entry<String, Map<String, Map<String, HealthResult>>> input) {
-                final LinkedList<InstanceHealths> serviceHealths = new LinkedList<InstanceHealths>();
-                serviceHealths.addAll(Collections2.transform(input.getValue().entrySet(), new Function<Map.Entry<String, Map<String, HealthResult>>, InstanceHealths>() {
+            public Service apply(final Map.Entry<String, Map<String, Map<String, Health>>> input) {
+                final LinkedList<Node> serviceHealths = new LinkedList<>();
+                serviceHealths.addAll(Collections2.transform(input.getValue().entrySet(), new Function<Map.Entry<String, Map<String, Health>>, Node>() {
                     @Override
-                    public InstanceHealths apply(final Map.Entry<String, Map<String, HealthResult>> input) {
-                        return new InstanceHealths(input.getKey(), input.getValue());
+                    public Node apply(final Map.Entry<String, Map<String, Health>> input) {
+                        return new Node(input.getKey(), Node.State.Unknown, Node.Role.Active, input.getValue());
                     }
                 }));
-                return new ServiceHealths(input.getKey(), serviceHealths);
+                return new Service(input.getKey(), resolveState(serviceHealths), serviceHealths);
+            }
+
+            private Service.State resolveState(final LinkedList<Node> serviceHealths) {
+                if (serviceHealths.isEmpty())
+                    return Service.State.Absent;
+                else {
+                    final Optional<Node> active = getActive(serviceHealths);
+                    if (!active.isPresent())
+                        return Service.State.Absent;
+
+                    final Node activeNode = active.get();
+                    for (Health health : activeNode.getHealths().values()) {
+                        if (!health.isHealthy())
+                            return Service.State.Unhealthy;
+                    }
+
+                    return Service.State.Healthy;
+                }
+            }
+
+            private Optional<Node> getActive(final LinkedList<Node> nodes) {
+                for (Node i : nodes)
+                    if (i.getRole().isActive())
+                        return Optional.of(i);
+                return Optional.absent();
             }
         });
     }
