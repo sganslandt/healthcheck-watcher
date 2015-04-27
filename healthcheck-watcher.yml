@@ -8,3 +8,11 @@ httpClient:
   keepAlive: 0ms
   retries: 0
   userAgent: healthcheck-watcher
+
+database:
+  driverClass: org.h2.Driver
+  user: sa
+  password: sa
+  url: jdbc:h2:./target/watcher
+  validationQuery: "SELECT 1"
+

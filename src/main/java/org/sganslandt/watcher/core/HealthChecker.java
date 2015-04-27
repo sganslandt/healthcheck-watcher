@@ -1,7 +1,9 @@
 package org.sganslandt.watcher.core;
 
 import com.google.common.eventbus.EventBus;
+import io.dropwizard.lifecycle.Managed;
 import org.sganslandt.watcher.core.events.HealthChangedEvent;
+import org.sganslandt.watcher.core.events.NodeRemovedEvent;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
@@ -13,21 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class HealthChecker {
+public class HealthChecker implements Managed {
 
     // Dependencies
     private final HealthCheckerClient healthCheckerClient;
+    private final ServiceDOA dao;
     private final EventBus eventBus;
     private final ScheduledThreadPoolExecutor scheduler;
 
     // Data
-    private final Map<String, List<String>> servicesToWatch;
     private final Map<String, Map<String, Health>> nodeHealths;
 
-    public HealthChecker(final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
+    public HealthChecker(final HealthCheckerClient healthCheckerClient, final ServiceDOA dao, final EventBus eventBus) {
         this.healthCheckerClient = healthCheckerClient;
+        this.dao = dao;
         this.eventBus = eventBus;
-        this.servicesToWatch = new ConcurrentHashMap<>();
         this.nodeHealths = new ConcurrentHashMap<>();
 
         this.scheduler = new ScheduledThreadPoolExecutor(100);
@@ -46,7 +48,7 @@ public class HealthChecker {
      * @param serviceName Name of the service
      */
     public void addService(String serviceName) {
-        servicesToWatch.put(serviceName, new LinkedList<String>());
+        dao.addService(serviceName);
         eventBus.post(new ServiceAddedEvent(serviceName));
     }
 
@@ -57,12 +59,10 @@ public class HealthChecker {
      * @param url         Root URL of the newly deployed version of the service
      */
     public void monitor(String serviceName, String url) {
-        synchronized (servicesToWatch) {
-            if (!servicesToWatch.containsKey(serviceName))
-                addService(serviceName);
+        if (!dao.listServices().contains(serviceName))
+            addService(serviceName);
 
-            servicesToWatch.get(serviceName).add(url);
-        }
+        dao.addNode(serviceName, url);
     }
 
     /**
@@ -72,10 +72,9 @@ public class HealthChecker {
      * @param url         Root URL of the node to stop monitoring
      */
     public void stopMonitoring(String serviceName, String url) {
-        if (!servicesToWatch.containsKey(serviceName))
-            return;
-
-        servicesToWatch.get(serviceName).remove(url);
+        dao.removeNode(serviceName, url);
+        nodeHealths.remove(url);
+        eventBus.post(new NodeRemovedEvent(serviceName, url));
     }
 
     /**
@@ -84,14 +83,17 @@ public class HealthChecker {
      * @param serviceName Name of the service
      */
     public void removeService(String serviceName) {
-        servicesToWatch.remove(serviceName);
+        for (String url : dao.listNodes(serviceName))
+            stopMonitoring(serviceName, url);
+
+        dao.removeAllNodes(serviceName);
+        dao.removeService(serviceName);
         eventBus.post(new ServiceRemovedEvent(serviceName));
     }
 
     private void checkAll() {
-        for (Map.Entry<String, List<String>> entry : servicesToWatch.entrySet()) {
-            final String serviceName = entry.getKey();
-            for (final String url : entry.getValue()) {
+        for (final String serviceName : dao.listServices()) {
+            for (final String url : dao.listNodes(serviceName)) {
                 scheduler.execute(new Runnable() {
                     @Override
                     public void run() {
@@ -110,4 +112,13 @@ public class HealthChecker {
         }
     }
 
+    @Override
+    public void start() throws Exception {
+        for (String serviceName : dao.listServices())
+            eventBus.post(new ServiceAddedEvent(serviceName));
+    }
+
+    @Override
+    public void stop() throws Exception {
+    }
 }
