@@ -2,3 +2,4 @@
 dependency-reduced-pom.xml
 target/
 healthcheck-watcher.iml
+watcher.*.db

@@ -14,14 +14,14 @@ public class HealthChecker implements Managed {
 
     // Dependencies
     private final HealthCheckerClient healthCheckerClient;
-    private final ServiceDOA dao;
+    private final ServiceDAO dao;
     private final EventBus eventBus;
     private final ScheduledThreadPoolExecutor scheduler;
 
     // Data
     private final Map<String, Map<String, Health>> nodeHealths;
 
-    public HealthChecker(final HealthCheckerClient healthCheckerClient, final ServiceDOA dao, final EventBus eventBus) {
+    public HealthChecker(final HealthCheckerClient healthCheckerClient, final ServiceDAO dao, final EventBus eventBus, int checkInterval) {
         this.healthCheckerClient = healthCheckerClient;
         this.dao = dao;
         this.eventBus = eventBus;
@@ -33,7 +33,7 @@ public class HealthChecker implements Managed {
             public void run() {
                 checkAll();
             }
-        }, 5, 5, TimeUnit.SECONDS);
+        }, 5, checkInterval, TimeUnit.SECONDS);
     }
 
     /**

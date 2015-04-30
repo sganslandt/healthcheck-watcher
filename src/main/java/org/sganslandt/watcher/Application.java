@@ -6,7 +6,7 @@ import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.sganslandt.watcher.core.HealthChecker;
-import org.sganslandt.watcher.core.ServiceDOA;
+import org.sganslandt.watcher.core.ServiceDAO;
 import org.sganslandt.watcher.external.JerseyHealthCheckerClient;
 import org.sganslandt.watcher.resources.HealthsResource;
 import org.skife.jdbi.v2.DBI;
@@ -38,12 +38,13 @@ public class Application extends io.dropwizard.Application<Configuration> {
 
         final DBIFactory factory = new DBIFactory();
         final DBI jdbi = factory.build(environment, configuration.getDataSourceFactory(), "servicesDataSource");
-        final ServiceDOA dao = jdbi.onDemand(ServiceDOA.class);
+        final ServiceDAO dao = jdbi.onDemand(ServiceDAO.class);
         dao.createServicesTable();
         dao.createURLsTable();
 
         final JerseyHealthCheckerClient healthCheckerClient = new JerseyHealthCheckerClient(client);
-        final HealthChecker healthChecker = new HealthChecker(healthCheckerClient, dao, eventBus);
+        HealthChecker healthChecker = configuration.getHealthChecker().build(healthCheckerClient, dao, eventBus);
+
         final HealthsResource resource = new HealthsResource(healthChecker);
 
         environment.lifecycle().manage(healthChecker);

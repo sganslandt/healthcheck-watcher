@@ -13,10 +13,13 @@ database:
   driverClass: org.h2.Driver
   user: sa
   password: sa
-  url: jdbc:h2:./target/watcher
+  url: jdbc:h2:./watcher
   validationQuery: "SELECT 1"
 
 eventBus:
   async: true
   threads: 1
+
+healthChecker:
+  checkInterval: 5
 

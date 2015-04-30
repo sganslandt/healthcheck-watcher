@@ -11,15 +11,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.sganslandt.watcher.core.HealthChecker;
-import org.sganslandt.watcher.core.ServiceDOA;
+import org.sganslandt.watcher.core.ServiceDAO;
 import org.sganslandt.watcher.core.events.NodeAddedEvent;
 import org.sganslandt.watcher.core.events.NodeRemovedEvent;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 
 public class NodeManagementTest {
     private final Environment environment = new Environment("", new ObjectMapper(), null, new MetricRegistry(), Object.class.getClassLoader());
@@ -41,7 +41,7 @@ public class NodeManagementTest {
         config.setHttpClient(new JerseyClientConfiguration());
         config.setEventBus(new EventBusFactory(false, 0));
 
-        final ServiceDOA dao = new DBIFactory().build(environment, database, "servicesDataSource").onDemand(ServiceDOA.class);
+        final ServiceDAO dao = new DBIFactory().build(environment, database, "servicesDataSource").onDemand(ServiceDAO.class);
         dao.createServicesTable();
         dao.createURLsTable();
 
@@ -49,8 +49,7 @@ public class NodeManagementTest {
         recordingEventBus = new RecordingEventBus(eventBus);
         eventBus.register(recordingEventBus);
 
-        healthChecker = new HealthChecker(healthCheckerClient, dao, recordingEventBus);
-
+        healthChecker = new HealthChecker(healthCheckerClient, dao, recordingEventBus, 1);
     }
 
     @After
@@ -142,6 +141,5 @@ public class NodeManagementTest {
         healthChecker.removeService(serviceName);
         recordingEventBus.expectNoPublishedEvents();
     }
-
 
 }

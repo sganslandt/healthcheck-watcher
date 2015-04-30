@@ -6,7 +6,7 @@ import org.skife.jdbi.v2.sqlobject.SqlUpdate;
 
 import java.util.Collection;
 
-public interface ServiceDOA {
+public interface ServiceDAO {
     @SqlUpdate("create table if not exists Service (serviceName varChar(255) primary key)")
     void createServicesTable();
 
