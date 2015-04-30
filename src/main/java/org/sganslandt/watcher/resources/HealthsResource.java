@@ -7,7 +7,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.eventbus.Subscribe;
 import org.sganslandt.watcher.core.*;
 import org.sganslandt.watcher.core.System;
-import org.sganslandt.watcher.core.events.HealthChangedEvent;
+import org.sganslandt.watcher.core.events.NodeHealthChangedEvent;
 import org.sganslandt.watcher.core.events.NodeRemovedEvent;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
@@ -43,7 +43,7 @@ public class HealthsResource {
     }
 
     @Subscribe
-    public void handle(HealthChangedEvent event) {
+    public void handle(NodeHealthChangedEvent event) {
         log.info("Received {}", event);
         serviceHealths.get(event.getServiceName()).put(event.getServiceUrl(), event.getHealths());
     }

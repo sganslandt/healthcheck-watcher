@@ -2,14 +2,9 @@ package org.sganslandt.watcher.core;
 
 import com.google.common.eventbus.EventBus;
 import io.dropwizard.lifecycle.Managed;
-import org.sganslandt.watcher.core.events.HealthChangedEvent;
-import org.sganslandt.watcher.core.events.NodeRemovedEvent;
-import org.sganslandt.watcher.core.events.ServiceAddedEvent;
-import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.core.events.*;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -48,6 +43,9 @@ public class HealthChecker implements Managed {
      * @param serviceName Name of the service
      */
     public void addService(String serviceName) {
+        if (dao.listServices().contains(serviceName))
+            return;
+
         dao.addService(serviceName);
         eventBus.post(new ServiceAddedEvent(serviceName));
     }
@@ -59,9 +57,16 @@ public class HealthChecker implements Managed {
      * @param url         Root URL of the newly deployed version of the service
      */
     public void monitor(String serviceName, String url) {
-        if (!dao.listServices().contains(serviceName))
+        if (!dao.listServices().contains(serviceName)) {
             addService(serviceName);
+            doAddNode(serviceName, url);
+        } else if (!dao.listNodes(serviceName).contains(url)) {
+            doAddNode(serviceName, url);
+        }
+    }
 
+    private void doAddNode(final String serviceName, final String url) {
+        eventBus.post(new NodeAddedEvent(serviceName, url));
         dao.addNode(serviceName, url);
     }
 
@@ -72,6 +77,9 @@ public class HealthChecker implements Managed {
      * @param url         Root URL of the node to stop monitoring
      */
     public void stopMonitoring(String serviceName, String url) {
+        if (!dao.listNodes(serviceName).contains(url))
+            return;
+
         dao.removeNode(serviceName, url);
         nodeHealths.remove(url);
         eventBus.post(new NodeRemovedEvent(serviceName, url));
@@ -86,9 +94,10 @@ public class HealthChecker implements Managed {
         for (String url : dao.listNodes(serviceName))
             stopMonitoring(serviceName, url);
 
-        dao.removeAllNodes(serviceName);
-        dao.removeService(serviceName);
-        eventBus.post(new ServiceRemovedEvent(serviceName));
+        if (dao.listServices().contains(serviceName)) {
+            dao.removeService(serviceName);
+            eventBus.post(new ServiceRemovedEvent(serviceName));
+        }
     }
 
     private void checkAll() {
@@ -107,7 +116,7 @@ public class HealthChecker implements Managed {
     private void check(String serviceName, String url) {
         final Map<String, Health> nodeHealths = healthCheckerClient.check(url);
         if (!(this.nodeHealths.containsKey(url) && this.nodeHealths.get(url).equals(nodeHealths))) {
-            eventBus.post(new HealthChangedEvent(serviceName, url, nodeHealths));
+            eventBus.post(new NodeHealthChangedEvent(serviceName, url, nodeHealths));
             this.nodeHealths.put(url, nodeHealths);
         }
     }

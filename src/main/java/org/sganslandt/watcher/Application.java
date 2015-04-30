@@ -7,7 +7,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.sganslandt.watcher.core.HealthChecker;
 import org.sganslandt.watcher.core.ServiceDOA;
-import org.sganslandt.watcher.external.HealthCheckerClient;
+import org.sganslandt.watcher.external.JerseyHealthCheckerClient;
 import org.sganslandt.watcher.resources.HealthsResource;
 import org.skife.jdbi.v2.DBI;
 
@@ -42,7 +42,7 @@ public class Application extends io.dropwizard.Application<Configuration> {
         dao.createServicesTable();
         dao.createURLsTable();
 
-        final HealthCheckerClient healthCheckerClient = new HealthCheckerClient(client);
+        final JerseyHealthCheckerClient healthCheckerClient = new JerseyHealthCheckerClient(client);
         final HealthChecker healthChecker = new HealthChecker(healthCheckerClient, dao, eventBus);
         final HealthsResource resource = new HealthsResource(healthChecker);
 

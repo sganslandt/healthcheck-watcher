@@ -6,7 +6,7 @@ import org.sganslandt.watcher.core.Health;
 import java.util.Map;
 
 @Data
-public class HealthChangedEvent {
+public class NodeHealthChangedEvent {
     private final String serviceName;
     private final String serviceUrl;
     private final Map<String, Health> healths;

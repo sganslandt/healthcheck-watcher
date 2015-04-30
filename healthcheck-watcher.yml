@@ -16,3 +16,7 @@ database:
   url: jdbc:h2:./target/watcher
   validationQuery: "SELECT 1"
 
+eventBus:
+  async: true
+  threads: 1
+

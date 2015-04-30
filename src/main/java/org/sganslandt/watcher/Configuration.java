@@ -12,6 +12,10 @@ public class Configuration extends io.dropwizard.Configuration {
     @NotNull
     private JerseyClientConfiguration httpClient = new JerseyClientConfiguration();
 
+    @Valid
+    @NotNull
+    private EventBusFactory eventBus;
+
     @JsonProperty("httpClient")
     public JerseyClientConfiguration getHttpClient() {
         return httpClient;
@@ -34,5 +38,15 @@ public class Configuration extends io.dropwizard.Configuration {
     @JsonProperty("database")
     public void setDataSourceFactory(DataSourceFactory database) {
         this.database = database;
+    }
+
+    @JsonProperty("eventBus")
+    public EventBusFactory getEventBus() {
+        return eventBus;
+    }
+
+    @JsonProperty
+    public void setEventBus(EventBusFactory eventBus) {
+        this.eventBus = eventBus;
     }
 }
