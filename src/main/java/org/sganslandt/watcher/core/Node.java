@@ -2,14 +2,14 @@ package org.sganslandt.watcher.core;
 
 import lombok.Data;
 
-import java.util.Map;
+import java.util.List;
 
 @Data
 public final class Node {
     private final String url;
     private final State state;
     private final Role role;
-    private final Map<String, Health> healths;
+    private final List<Health> healths;
 
     public static enum Role {
 

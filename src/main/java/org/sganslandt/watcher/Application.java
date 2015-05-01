@@ -5,6 +5,7 @@ import io.dropwizard.client.JerseyClientBuilder;
 import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import io.dropwizard.views.ViewBundle;
 import org.sganslandt.watcher.core.HealthChecker;
 import org.sganslandt.watcher.core.ServiceDAO;
 import org.sganslandt.watcher.external.JerseyHealthCheckerClient;
@@ -25,7 +26,7 @@ public class Application extends io.dropwizard.Application<Configuration> {
 
     @Override
     public void initialize(Bootstrap<Configuration> bootstrap) {
-        // nothing to do yet
+        bootstrap.addBundle(new ViewBundle<Configuration>());
     }
 
     @Override

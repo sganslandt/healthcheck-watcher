@@ -11,6 +11,7 @@ import org.sganslandt.watcher.core.events.NodeHealthChangedEvent;
 import org.sganslandt.watcher.core.events.NodeRemovedEvent;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.views.SystemView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,8 @@ import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Lists.transform;
 
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
@@ -29,7 +31,7 @@ public class HealthsResource {
 
     private final HealthChecker healthChecker;
 
-    private final Map<String, Map<String, Map<String, Health>>> serviceHealths;
+    private final Map<String, Map<String, List<Health>>> serviceHealths;
 
     public HealthsResource(final HealthChecker healthChecker) {
         this.healthChecker = healthChecker;
@@ -39,7 +41,7 @@ public class HealthsResource {
     @Subscribe
     public void handle(ServiceAddedEvent event) {
         log.info("Received {}", event);
-        serviceHealths.put(event.getServiceName(), new HashMap<String, Map<String, Health>>());
+        serviceHealths.put(event.getServiceName(), new HashMap<String, List<Health>>());
     }
 
     @Subscribe
@@ -60,15 +62,25 @@ public class HealthsResource {
 
     @GET
     @Timed
-    @Path("/")
-    public org.sganslandt.watcher.core.System getSystem() {
+    @Produces(MediaType.TEXT_HTML)
+    public SystemView getSystemHTML() {
+        return new SystemView(new System(
+                resolveState(getServices()),
+                getServices()
+        ));
+    }
+
+    @GET
+    @Timed
+    @Produces(MediaType.APPLICATION_JSON)
+    public org.sganslandt.watcher.core.System getSystemJSON() {
         return new System(
                 resolveState(getServices()),
                 getServices()
         );
     }
 
-    private System.State resolveState(final Iterable<Service> services) {
+    private System.State resolveState(final List<Service> services) {
         for (Service s : services)
             if (!EnumSet.of(Service.State.Absent, Service.State.Healthy).contains(s.getState()))
                 return System.State.Unhealthy;
@@ -79,22 +91,22 @@ public class HealthsResource {
     @GET
     @Timed
     @Path("/service")
-    public Iterable<Service> getServices() {
-        return transform(serviceHealths.entrySet(), new Function<Map.Entry<String, Map<String, Map<String, Health>>>, Service>() {
+    public List<Service> getServices() {
+        return transform(newArrayList(serviceHealths.entrySet()), new Function<Map.Entry<String, Map<String, List<Health>>>, Service>() {
             @Override
-            public Service apply(final Map.Entry<String, Map<String, Map<String, Health>>> input) {
+            public Service apply(final Map.Entry<String, Map<String, List<Health>>> input) {
                 final LinkedList<Node> serviceHealths = new LinkedList<>();
-                serviceHealths.addAll(Collections2.transform(input.getValue().entrySet(), new Function<Map.Entry<String, Map<String, Health>>, Node>() {
+                serviceHealths.addAll(Collections2.transform(input.getValue().entrySet(), new Function<Map.Entry<String, List<Health>>, Node>() {
                     @Override
-                    public Node apply(final Map.Entry<String, Map<String, Health>> input) {
-                        return new Node(input.getKey(), resolveState(input.getValue().values()), Node.Role.Active, input.getValue());
+                    public Node apply(final Map.Entry<String, List<Health>> input) {
+                        return new Node(input.getKey(), resolveState(input.getValue()), Node.Role.Active, input.getValue());
                     }
                 }));
                 return new Service(input.getKey(), resolveState(serviceHealths), serviceHealths);
             }
 
-            private Node.State resolveState(final Collection<Health> healths) {
-                if (healths.isEmpty()) {
+            private Node.State resolveState(final List<Health> healths) {
+                if (!healths.iterator().hasNext()) {
                     return Node.State.Unknown;
                 } else {
                     for (Health h : healths)
@@ -114,7 +126,7 @@ public class HealthsResource {
                         return Service.State.Absent;
 
                     final Node activeNode = active.get();
-                    for (Health health : activeNode.getHealths().values()) {
+                    for (Health health : activeNode.getHealths()) {
                         if (!health.isHealthy())
                             return Service.State.Unhealthy;
                     }

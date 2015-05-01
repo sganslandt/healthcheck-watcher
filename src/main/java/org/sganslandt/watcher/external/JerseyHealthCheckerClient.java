@@ -1,6 +1,5 @@
 package org.sganslandt.watcher.external;
 
-import org.sganslandt.watcher.core.Health;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

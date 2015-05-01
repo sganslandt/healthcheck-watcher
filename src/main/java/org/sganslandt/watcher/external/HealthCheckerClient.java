@@ -1,7 +1,5 @@
 package org.sganslandt.watcher.external;
 
-import org.sganslandt.watcher.core.Health;
-
 import java.util.Map;
 
 public interface HealthCheckerClient {

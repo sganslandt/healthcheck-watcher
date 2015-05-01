@@ -11,7 +11,7 @@ public final class Service {
     private final List<Node> nodes;
 
     public enum State {
-        Absent, Healthy, Unhealthy, Unknown
+            Absent, Healthy, Unhealthy, Unknown
     }
 
 }
