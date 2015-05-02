@@ -23,3 +23,6 @@ eventBus:
 healthChecker:
   checkInterval: 5
 
+viewSettings:
+  systemName: vagrant
+  refreshRate: 15

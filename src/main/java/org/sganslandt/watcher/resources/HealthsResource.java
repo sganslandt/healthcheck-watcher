@@ -3,8 +3,10 @@ package org.sganslandt.watcher.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.eventbus.Subscribe;
+import org.sganslandt.watcher.ViewSettings;
 import org.sganslandt.watcher.core.*;
 import org.sganslandt.watcher.core.System;
 import org.sganslandt.watcher.core.events.NodeHealthChangedEvent;
@@ -20,6 +22,7 @@ import javax.ws.rs.core.MediaType;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
 
@@ -30,11 +33,13 @@ public class HealthsResource {
     private static final Logger log = LoggerFactory.getLogger(HealthsResource.class);
 
     private final HealthChecker healthChecker;
+    private final ViewSettings viewSettings;
 
     private final Map<String, Map<String, List<Health>>> serviceHealths;
 
-    public HealthsResource(final HealthChecker healthChecker) {
+    public HealthsResource(final HealthChecker healthChecker, final ViewSettings viewSettings) {
         this.healthChecker = healthChecker;
+        this.viewSettings = viewSettings;
         this.serviceHealths = new ConcurrentHashMap<>();
     }
 
@@ -64,10 +69,11 @@ public class HealthsResource {
     @Timed
     @Produces(MediaType.TEXT_HTML)
     public SystemView getSystemHTML() {
-        return new SystemView(new System(
-                resolveState(getServices()),
-                getServices()
-        ));
+        return new SystemView(
+                new System(
+                        resolveState(getServices()),
+                        getServices()
+                ), viewSettings);
     }
 
     @GET
@@ -105,6 +111,30 @@ public class HealthsResource {
                 return new Service(input.getKey(), resolveState(serviceHealths), serviceHealths);
             }
 
+            private Service.State resolveState(final LinkedList<Node> serviceHealths) {
+                if (serviceHealths.isEmpty())
+                    return Service.State.Absent;
+                else {
+                    Collection<Node> activeNodes = filter(serviceHealths, new Predicate<Node>() {
+                        @Override
+                        public boolean apply(final Node input) {
+                            return input.getRole() == Node.Role.Active;
+                        }
+                    });
+                    if (activeNodes.isEmpty())
+                        return Service.State.Absent;
+
+                    for (Node node : activeNodes) {
+                        for (Health health : node.getHealths()) {
+                            if (!health.isHealthy())
+                                return Service.State.Unhealthy;
+                        }
+                    }
+
+                    return Service.State.Healthy;
+                }
+            }
+
             private Node.State resolveState(final List<Health> healths) {
                 if (!healths.iterator().hasNext()) {
                     return Node.State.Unknown;
@@ -114,24 +144,6 @@ public class HealthsResource {
                             return Node.State.Unhealthy;
 
                     return Node.State.Healthy;
-                }
-            }
-
-            private Service.State resolveState(final LinkedList<Node> serviceHealths) {
-                if (serviceHealths.isEmpty())
-                    return Service.State.Absent;
-                else {
-                    final Optional<Node> active = getActive(serviceHealths);
-                    if (!active.isPresent())
-                        return Service.State.Absent;
-
-                    final Node activeNode = active.get();
-                    for (Health health : activeNode.getHealths()) {
-                        if (!health.isHealthy())
-                            return Service.State.Unhealthy;
-                    }
-
-                    return Service.State.Healthy;
                 }
             }
 

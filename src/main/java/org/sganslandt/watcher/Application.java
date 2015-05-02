@@ -46,7 +46,7 @@ public class Application extends io.dropwizard.Application<Configuration> {
         final JerseyHealthCheckerClient healthCheckerClient = new JerseyHealthCheckerClient(client);
         HealthChecker healthChecker = configuration.getHealthChecker().build(healthCheckerClient, dao, eventBus);
 
-        final HealthsResource resource = new HealthsResource(healthChecker);
+        final HealthsResource resource = new HealthsResource(healthChecker, configuration.getViewSettings());
 
         environment.lifecycle().manage(healthChecker);
 

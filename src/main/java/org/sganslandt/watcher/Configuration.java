@@ -26,6 +26,10 @@ public class Configuration extends io.dropwizard.Configuration {
     @NotNull
     private HealthCheckerFactory healthCheckerFactory;
 
+    @Valid
+    @NotNull
+    private ViewSettings viewSettings;
+
     @JsonProperty("httpClient")
     public JerseyClientConfiguration getHttpClient() {
         return httpClient;
@@ -73,5 +77,15 @@ public class Configuration extends io.dropwizard.Configuration {
     @JsonProperty
     public void setHealthChecker(final HealthCheckerFactory healthCheckerFactory) {
         this.healthCheckerFactory = healthCheckerFactory;
+    }
+
+    @JsonProperty
+    public ViewSettings getViewSettings() {
+        return viewSettings;
+    }
+
+    @JsonProperty
+    public void setViewSettings(ViewSettings viewSettings) {
+        this.viewSettings = viewSettings;
     }
 }
