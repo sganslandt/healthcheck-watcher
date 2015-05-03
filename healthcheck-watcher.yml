@@ -17,12 +17,12 @@ database:
   validationQuery: "SELECT 1"
 
 eventBus:
-  async: true
+  async: false
   threads: 1
 
-healthChecker:
+system:
+  name: vagrant
   checkInterval: 5
 
 viewSettings:
-  systemName: vagrant
-  refreshRate: 15
+  refreshInterval: 15

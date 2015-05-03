@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
 
-public class HealthChecker implements Managed {
+public class HealthChecker {
 
     // Dependencies
     private final HealthCheckerClient healthCheckerClient;
@@ -40,70 +40,6 @@ public class HealthChecker implements Managed {
                 checkAll();
             }
         }, 5, checkInterval, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Add a service to the registry. Signals that service is part of the system, but is
-     * not yet deployed or we don't know where it is yet.
-     *
-     * @param serviceName Name of the service
-     */
-    public void addService(String serviceName) {
-        if (dao.listServices().contains(serviceName))
-            return;
-
-        dao.addService(serviceName);
-        eventBus.post(new ServiceAddedEvent(serviceName));
-    }
-
-    /**
-     * Start monitoring a node of a service.
-     *
-     * @param serviceName Name of the service
-     * @param url         Root URL of the newly deployed version of the service
-     */
-    public void monitor(String serviceName, String url) {
-        if (!dao.listServices().contains(serviceName)) {
-            addService(serviceName);
-            doAddNode(serviceName, url);
-        } else if (!dao.listNodes(serviceName).contains(url)) {
-            doAddNode(serviceName, url);
-        }
-    }
-
-    private void doAddNode(final String serviceName, final String url) {
-        eventBus.post(new NodeAddedEvent(serviceName, url));
-        dao.addNode(serviceName, url);
-    }
-
-    /**
-     * Stop monitoring a specific node of a service.
-     *
-     * @param serviceName Name of the service
-     * @param url         Root URL of the node to stop monitoring
-     */
-    public void stopMonitoring(String serviceName, String url) {
-        if (!dao.listNodes(serviceName).contains(url))
-            return;
-
-        dao.removeNode(serviceName, url);
-        nodeHealths.remove(url);
-        eventBus.post(new NodeRemovedEvent(serviceName, url));
-    }
-
-    /**
-     * Completely remove a service from the system.
-     *
-     * @param serviceName Name of the service
-     */
-    public void removeService(String serviceName) {
-        for (String url : dao.listNodes(serviceName))
-            stopMonitoring(serviceName, url);
-
-        if (dao.listServices().contains(serviceName)) {
-            dao.removeService(serviceName);
-            eventBus.post(new ServiceRemovedEvent(serviceName));
-        }
     }
 
     private void checkAll() {
@@ -134,13 +70,4 @@ public class HealthChecker implements Managed {
         }
     }
 
-    @Override
-    public void start() throws Exception {
-        for (String serviceName : dao.listServices())
-            eventBus.post(new ServiceAddedEvent(serviceName));
-    }
-
-    @Override
-    public void stop() throws Exception {
-    }
 }

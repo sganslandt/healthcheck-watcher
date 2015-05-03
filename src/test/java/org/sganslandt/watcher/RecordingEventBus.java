@@ -22,6 +22,11 @@ class RecordingEventBus extends EventBus {
         this.delegate.post(event);
     }
 
+    @Override
+    public void register(Object o) {
+        this.delegate.register(o);
+    }
+
     public void clearRecordedEvents() {
         this.recordedEvents.clear();
     }

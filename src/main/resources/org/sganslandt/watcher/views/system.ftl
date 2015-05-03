@@ -8,13 +8,13 @@
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 
-    <meta http-equiv="refresh" content="${settings.refreshRate}">
+    <meta http-equiv="refresh" content="${settings.refreshInterval}">
 </head>
 <body>
 
 <div class="jumbotron">
     <div class="container">
-        <h1>watcher of ${settings.systemName}</h1>
+        <h1>watcher of ${system.systemName}</h1>
 
         <p>Shows a neat summary of the services deployed, topology and health of the system.</p>
 

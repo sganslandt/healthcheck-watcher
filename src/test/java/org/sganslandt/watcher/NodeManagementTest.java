@@ -10,7 +10,6 @@ import io.dropwizard.setup.Environment;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sganslandt.watcher.core.HealthChecker;
 import org.sganslandt.watcher.core.ServiceDAO;
 import org.sganslandt.watcher.core.events.NodeAddedEvent;
 import org.sganslandt.watcher.core.events.NodeRemovedEvent;
@@ -25,7 +24,7 @@ public class NodeManagementTest {
     private final Environment environment = new Environment("", new ObjectMapper(), null, new MetricRegistry(), Object.class.getClassLoader());
     private final Configuration config = new Configuration();
     private final HealthCheckerClient healthCheckerClient = mock(HealthCheckerClient.class);
-    private HealthChecker healthChecker;
+    private org.sganslandt.watcher.core.System system;
     private RecordingEventBus recordingEventBus;
 
     @Before
@@ -49,7 +48,8 @@ public class NodeManagementTest {
         recordingEventBus = new RecordingEventBus(eventBus);
         eventBus.register(recordingEventBus);
 
-        healthChecker = new HealthChecker(healthCheckerClient, dao, recordingEventBus, 1);
+        system = new org.sganslandt.watcher.core.System("testSystem", recordingEventBus);
+        recordingEventBus.register(system);
     }
 
     @After
@@ -62,13 +62,13 @@ public class NodeManagementTest {
     public void testAddService_serviceAdded() {
         // Add a service, published event
         final String serviceName = "foo-service";
-        healthChecker.addService(serviceName);
+        system.addService(serviceName);
 
         recordingEventBus.expectPublishedEvents(new ServiceAddedEvent(serviceName));
 
         // Add it again, should not produce another event
         recordingEventBus.clearRecordedEvents();
-        healthChecker.addService(serviceName);
+        system.addService(serviceName);
 
         recordingEventBus.expectNoPublishedEvents();
     }
@@ -78,7 +78,7 @@ public class NodeManagementTest {
         // Add a node without the service being there, service and node are added
         final String serviceName = "foo-service";
         final String url = "foo-url";
-        healthChecker.monitor(serviceName, url);
+        system.monitor(serviceName, url);
 
         recordingEventBus.expectPublishedEvents(
                 new ServiceAddedEvent(serviceName),
@@ -88,7 +88,7 @@ public class NodeManagementTest {
         // Add another node, only node is added
         recordingEventBus.clearRecordedEvents();
         final String url2 = "foo-url2";
-        healthChecker.monitor(serviceName, url2);
+        system.monitor(serviceName, url2);
 
         recordingEventBus.expectPublishedEvents(
                 new NodeAddedEvent(serviceName, url2)
@@ -96,7 +96,7 @@ public class NodeManagementTest {
 
         // Add the same node again, nothing happens
         recordingEventBus.clearRecordedEvents();
-        healthChecker.monitor(serviceName, url2);
+        system.monitor(serviceName, url2);
 
         recordingEventBus.expectNoPublishedEvents();
     }
@@ -106,16 +106,16 @@ public class NodeManagementTest {
         final String serviceName = "foo-service";
         final String url = "foo-url";
         final String url2 = "foo-url2";
-        healthChecker.monitor(serviceName, url);
-        healthChecker.monitor(serviceName, url2);
+        system.monitor(serviceName, url);
+        system.monitor(serviceName, url2);
 
         recordingEventBus.clearRecordedEvents();
-        healthChecker.stopMonitoring(serviceName, url);
+        system.stopMonitoring(serviceName, url);
         recordingEventBus.expectPublishedEvents(new NodeRemovedEvent(serviceName, url));
 
         // Remove it again, nothing happens
         recordingEventBus.clearRecordedEvents();
-        healthChecker.stopMonitoring(serviceName, url);
+        system.stopMonitoring(serviceName, url);
         recordingEventBus.expectPublishedEvents();
     }
 
@@ -124,12 +124,12 @@ public class NodeManagementTest {
         final String serviceName = "foo-service";
         final String url = "foo-url";
         final String url2 = "foo-url2";
-        healthChecker.monitor(serviceName, url);
-        healthChecker.monitor(serviceName, url2);
+        system.monitor(serviceName, url);
+        system.monitor(serviceName, url2);
 
         // Remove the service, service and all nodes are removed
         recordingEventBus.clearRecordedEvents();
-        healthChecker.removeService(serviceName);
+        system.removeService(serviceName);
         recordingEventBus.expectPublishedEvents(
                 new NodeRemovedEvent(serviceName, url),
                 new NodeRemovedEvent(serviceName, url2),
@@ -138,7 +138,7 @@ public class NodeManagementTest {
 
         // Remove it again, nothing happens
         recordingEventBus.clearRecordedEvents();
-        healthChecker.removeService(serviceName);
+        system.removeService(serviceName);
         recordingEventBus.expectNoPublishedEvents();
     }
 

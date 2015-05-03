@@ -6,13 +6,10 @@ import lombok.Data;
 
 @Data
 public class ViewSettings {
-    private final int refreshRate;
-    private final String systemName;
+    private final int refreshInterval;
 
     @JsonCreator
-    public ViewSettings(@JsonProperty("refreshRate") final int refreshRate,
-                        @JsonProperty("systemName") final String systemName) {
-        this.refreshRate = refreshRate;
-        this.systemName = systemName;
+    public ViewSettings(@JsonProperty("refreshInterval") final int refreshRate) {
+        this.refreshInterval = refreshRate;
     }
 }

@@ -68,14 +68,14 @@ public class Configuration extends io.dropwizard.Configuration {
     }
 
     @JsonProperty
-    public HealthCheckerFactory getHealthChecker() {
+    public HealthCheckerFactory getSystem() {
         if (healthCheckerFactory == null)
-            return new HealthCheckerFactory(DEFAULT_HEALTHCHECK_INTERVAL);
+            return new HealthCheckerFactory("unknown", DEFAULT_HEALTHCHECK_INTERVAL);
         return healthCheckerFactory;
     }
 
     @JsonProperty
-    public void setHealthChecker(final HealthCheckerFactory healthCheckerFactory) {
+    public void setSystem(final HealthCheckerFactory healthCheckerFactory) {
         this.healthCheckerFactory = healthCheckerFactory;
     }
 

@@ -6,10 +6,12 @@ import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
-import org.sganslandt.watcher.core.HealthChecker;
 import org.sganslandt.watcher.core.ServiceDAO;
+import org.sganslandt.watcher.core.TableUpdater;
+import org.sganslandt.watcher.core.events.NodeAddedEvent;
+import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.external.JerseyHealthCheckerClient;
-import org.sganslandt.watcher.resources.HealthsResource;
+import org.sganslandt.watcher.resources.SystemResource;
 import org.skife.jdbi.v2.DBI;
 
 import javax.ws.rs.client.Client;
@@ -31,28 +33,51 @@ public class Application extends io.dropwizard.Application<Configuration> {
 
     @Override
     public void run(Configuration configuration, Environment environment) {
+        final EventBus eventBus = new EventBus();
+
+        // The HealthCheckerClient
         final Client client =
                 new JerseyClientBuilder(environment)
                         .using(configuration.getHttpClient())
                         .build(getName());
-        final EventBus eventBus = new EventBus();
+        final JerseyHealthCheckerClient healthCheckerClient = new JerseyHealthCheckerClient(client);
 
+        // DB and TableUpdater
         final DBIFactory factory = new DBIFactory();
         final DBI jdbi = factory.build(environment, configuration.getDataSourceFactory(), "servicesDataSource");
         final ServiceDAO dao = jdbi.onDemand(ServiceDAO.class);
         dao.createServicesTable();
         dao.createURLsTable();
+        final TableUpdater tableUpdater = new TableUpdater(dao);
 
-        final JerseyHealthCheckerClient healthCheckerClient = new JerseyHealthCheckerClient(client);
-        HealthChecker healthChecker = configuration.getHealthChecker().build(healthCheckerClient, dao, eventBus);
+        // Setup the System and HeathChecker
+        // TODO Move health checking into the nodes
+        final org.sganslandt.watcher.core.System system = new org.sganslandt.watcher.core.System(configuration.getSystem().getSystemName(), eventBus);
+        configuration.getSystem().build(healthCheckerClient, dao, eventBus);
 
-        final HealthsResource resource = new HealthsResource(healthChecker, configuration.getViewSettings());
+        // The Jersey Resource
+        final SystemResource healthResource = new SystemResource(system, configuration.getViewSettings());
 
-        environment.lifecycle().manage(healthChecker);
+        // Subscribe (almost) everything to the EventBus
+        eventBus.register(system);
+        eventBus.register(healthResource);
 
-        eventBus.register(resource);
+        // "Replay" state to everyone
+        replay(dao, eventBus);
 
-        environment.jersey().register(resource);
+        // Subscribe listeners that can't take replays...
+        eventBus.register(tableUpdater);
+
+        // Exprose the Jersey Resource
+        environment.jersey().register(healthResource);
+    }
+
+    public void replay(final ServiceDAO dao, final EventBus eventBus) {
+        for (String serviceName : dao.listServices()) {
+            eventBus.post(new ServiceAddedEvent(serviceName));
+            for (String url : dao.listNodes(serviceName))
+                eventBus.post(new NodeAddedEvent(serviceName, url));
+        }
     }
 
 }

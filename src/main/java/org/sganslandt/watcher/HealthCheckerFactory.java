@@ -10,10 +10,13 @@ import org.sganslandt.watcher.external.HealthCheckerClient;
 
 @Data
 public class HealthCheckerFactory {
-    private int checkInterval;
+    // TODO This doesn't belong here, but this will soon be SystemFactory...
+    private final String systemName;
+    private final int checkInterval;
 
     @JsonCreator
-    public HealthCheckerFactory(@JsonProperty("checkInterval") final int checkInterval) {
+    public HealthCheckerFactory(@JsonProperty("name") final String systemName, @JsonProperty("checkInterval") final int checkInterval) {
+        this.systemName = systemName;
         this.checkInterval = checkInterval;
     }
 
