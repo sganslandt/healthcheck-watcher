@@ -7,6 +7,7 @@ import com.google.common.eventbus.Subscribe;
 import lombok.Getter;
 import org.sganslandt.watcher.core.events.NodeAddedEvent;
 import org.sganslandt.watcher.core.events.NodeRemovedEvent;
+import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -22,10 +23,13 @@ public final class Service {
     private final String serviceName;
     @Getter
     private final List<Node> nodes;
+
+    private final HealthCheckerClient healthCheckerClient;
     private final EventBus eventBus;
 
-    public Service(String serviceName, EventBus eventBus) {
+    public Service(String serviceName, final HealthCheckerClient healthCheckerClient, EventBus eventBus) {
         this.serviceName = serviceName;
+        this.healthCheckerClient = healthCheckerClient;
         this.nodes = new LinkedList<>();
         this.eventBus = eventBus;
     }
@@ -76,7 +80,7 @@ public final class Service {
     @Subscribe
     public void handle(final NodeAddedEvent event) {
         if (event.getServiceName().equals(serviceName)) {
-            Node node = new Node(event.getNodeUrl(), Node.Role.Active);
+            Node node = new Node(event.getNodeUrl(), Node.Role.Active, healthCheckerClient, eventBus);
             nodes.add(node);
             eventBus.register(node);
         }
@@ -88,6 +92,7 @@ public final class Service {
         while (iterator.hasNext()) {
             Node node = iterator.next();
             if (event.getServiceName().equals(serviceName) && node.getUrl().equals(event.getUrl())) {
+                node.stop();
                 iterator.remove();
                 eventBus.unregister(node);
             }

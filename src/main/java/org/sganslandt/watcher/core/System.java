@@ -5,6 +5,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import java.util.*;
 
@@ -12,11 +13,13 @@ import static com.google.common.collect.Collections2.transform;
 
 public class System {
     private final String systemName;
+    private final HealthCheckerClient healthCheckerClient;
     private final List<Service> services;
     private final EventBus eventBus;
 
-    public System(final String systemName, final EventBus eventBus) {
+    public System(final String systemName, final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
         this.systemName = systemName;
+        this.healthCheckerClient = healthCheckerClient;
         this.services = new LinkedList<>();
         this.eventBus = eventBus;
     }
@@ -99,7 +102,7 @@ public class System {
 
     @Subscribe
     public void handle(ServiceAddedEvent event) {
-        Service service = new Service(event.getServiceName(), eventBus);
+        Service service = new Service(event.getServiceName(), healthCheckerClient, eventBus);
         services.add(service);
         eventBus.register(service);
     }

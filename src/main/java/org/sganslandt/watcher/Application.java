@@ -50,10 +50,8 @@ public class Application extends io.dropwizard.Application<Configuration> {
         dao.createURLsTable();
         final TableUpdater tableUpdater = new TableUpdater(dao);
 
-        // Setup the System and HeathChecker
-        // TODO Move health checking into the nodes
-        final org.sganslandt.watcher.core.System system = new org.sganslandt.watcher.core.System(configuration.getSystem().getSystemName(), eventBus);
-        configuration.getSystem().build(healthCheckerClient, dao, eventBus);
+        // Setup the System
+        final org.sganslandt.watcher.core.System system = configuration.getSystem().build(healthCheckerClient, eventBus);
 
         // The Jersey Resource
         final SystemResource healthResource = new SystemResource(system, configuration.getViewSettings());

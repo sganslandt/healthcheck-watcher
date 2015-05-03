@@ -7,7 +7,6 @@ import java.util.List;
 
 @Data
 public class NodeHealthChangedEvent {
-    private final String serviceName;
     private final String serviceUrl;
     private final List<Health> healths;
 }

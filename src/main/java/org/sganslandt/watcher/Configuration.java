@@ -1,7 +1,6 @@
 package org.sganslandt.watcher;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.dropwizard.client.JerseyClientConfiguration;
 import io.dropwizard.db.DataSourceFactory;
 
@@ -24,7 +23,7 @@ public class Configuration extends io.dropwizard.Configuration {
 
     @Valid
     @NotNull
-    private HealthCheckerFactory healthCheckerFactory;
+    private SystemFactory systemFactory;
 
     @Valid
     @NotNull
@@ -68,15 +67,15 @@ public class Configuration extends io.dropwizard.Configuration {
     }
 
     @JsonProperty
-    public HealthCheckerFactory getSystem() {
-        if (healthCheckerFactory == null)
-            return new HealthCheckerFactory("unknown", DEFAULT_HEALTHCHECK_INTERVAL);
-        return healthCheckerFactory;
+    public SystemFactory getSystem() {
+        if (systemFactory == null)
+            return new SystemFactory("unknown", DEFAULT_HEALTHCHECK_INTERVAL);
+        return systemFactory;
     }
 
     @JsonProperty
-    public void setSystem(final HealthCheckerFactory healthCheckerFactory) {
-        this.healthCheckerFactory = healthCheckerFactory;
+    public void setSystem(final SystemFactory systemFactory) {
+        this.systemFactory = systemFactory;
     }
 
     @JsonProperty

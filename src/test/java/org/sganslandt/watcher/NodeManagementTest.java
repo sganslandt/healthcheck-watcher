@@ -48,7 +48,7 @@ public class NodeManagementTest {
         recordingEventBus = new RecordingEventBus(eventBus);
         eventBus.register(recordingEventBus);
 
-        system = new org.sganslandt.watcher.core.System("testSystem", recordingEventBus);
+        system = new org.sganslandt.watcher.core.System("testSystem", healthCheckerClient, recordingEventBus);
         recordingEventBus.register(system);
     }
 
