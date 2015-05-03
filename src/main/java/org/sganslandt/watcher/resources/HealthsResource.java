@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
+import static java.util.Collections.sort;
 
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
@@ -98,7 +99,8 @@ public class HealthsResource {
     @Timed
     @Path("/service")
     public List<Service> getServices() {
-        return transform(newArrayList(serviceHealths.entrySet()), new Function<Map.Entry<String, Map<String, List<Health>>>, Service>() {
+        List<Service> services = new LinkedList<>();
+        services.addAll(transform(newArrayList(serviceHealths.entrySet()), new Function<Map.Entry<String, Map<String, List<Health>>>, Service>() {
             @Override
             public Service apply(final Map.Entry<String, Map<String, List<Health>>> input) {
                 final LinkedList<Node> serviceHealths = new LinkedList<>();
@@ -147,13 +149,36 @@ public class HealthsResource {
                 }
             }
 
-            private Optional<Node> getActive(final LinkedList<Node> nodes) {
-                for (Node i : nodes)
-                    if (i.getRole().isActive())
-                        return Optional.of(i);
-                return Optional.absent();
+        }));
+
+        sort(services, byStateAndName());
+
+        return services;
+    }
+
+    private static Comparator<Service> byStateAndName() {
+        return new Comparator<Service>() {
+            @Override
+            public int compare(final Service o1, final Service o2) {
+                if (o1.getState() == o2.getState())
+                    return o1.getServiceName().compareTo(o2.getServiceName());
+
+                return getStateOrder(o1.getState()).compareTo(getStateOrder(o2.getState()));
             }
-        });
+
+            private Integer getStateOrder(final Service.State state) {
+                switch (state) {
+                    case Absent:
+                        return 5;
+                    case Healthy:
+                        return 4;
+                    case Unhealthy:
+                        return 0;
+                    default:
+                        return -1;
+                }
+            }
+        };
     }
 
     @PUT
