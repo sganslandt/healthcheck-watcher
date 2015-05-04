@@ -16,13 +16,15 @@ import static com.google.common.collect.Collections2.transform;
 public class System {
     private final String systemName;
     private final HealthCheckerClient healthCheckerClient;
+    private final int checkInterval;
     private final List<Service> services;
     private final Map<String, Service.State> serviceStates;
     private final EventBus eventBus;
 
-    public System(final String systemName, final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
+    public System(final String systemName, final HealthCheckerClient healthCheckerClient, final int checkInterval, final EventBus eventBus) {
         this.systemName = systemName;
         this.healthCheckerClient = healthCheckerClient;
+        this.checkInterval = checkInterval;
         this.services = new LinkedList<>();
         this.serviceStates = new HashMap<>();
         this.eventBus = eventBus;
@@ -95,7 +97,7 @@ public class System {
 
     @Subscribe
     public void handle(final ServiceAddedEvent event) {
-        Service service = new Service(event.getServiceName(), healthCheckerClient, eventBus);
+        Service service = new Service(event.getServiceName(), healthCheckerClient, checkInterval, eventBus);
         services.add(service);
         serviceStates.put(event.getServiceName(), Service.State.Absent);
         eventBus.register(service);

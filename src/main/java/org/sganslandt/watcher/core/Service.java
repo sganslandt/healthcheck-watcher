@@ -26,11 +26,13 @@ public final class Service {
     private State state;
 
     private final HealthCheckerClient healthCheckerClient;
+    private final int checkInterval;
     private final EventBus eventBus;
 
-    public Service(String serviceName, final HealthCheckerClient healthCheckerClient, EventBus eventBus) {
+    public Service(String serviceName, final HealthCheckerClient healthCheckerClient, final int checkInterval, EventBus eventBus) {
         this.serviceName = serviceName;
         this.healthCheckerClient = healthCheckerClient;
+        this.checkInterval = checkInterval;
         this.state = State.Unknown;
         this.nodes = new LinkedList<>();
         this.nodeStates = new HashMap<>();
@@ -89,7 +91,7 @@ public final class Service {
     @Subscribe
     public void handle(final NodeAddedEvent event) {
         if (event.getServiceName().equals(serviceName)) {
-            Node node = new Node(serviceName, event.getNodeUrl(), Node.Role.Active, healthCheckerClient, eventBus);
+            Node node = new Node(serviceName, event.getNodeUrl(), Node.Role.Active, healthCheckerClient, checkInterval, eventBus);
             nodes.add(node);
             nodeStates.put(event.getNodeUrl(), Node.State.Unknown);
             eventBus.register(node);

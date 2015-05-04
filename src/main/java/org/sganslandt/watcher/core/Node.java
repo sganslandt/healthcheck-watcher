@@ -30,7 +30,7 @@ public final class Node {
     private final HealthCheckerClient healthCheckerClient;
     private final EventBus eventBus;
 
-    public Node(String serviceName, String url, Role role, final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
+    public Node(String serviceName, String url, Role role, final HealthCheckerClient healthCheckerClient, final int checkInterval, final EventBus eventBus) {
         this.eventBus = eventBus;
         this.serviceName = serviceName;
         this.url = url;
@@ -39,12 +39,12 @@ public final class Node {
 
         this.healthCheckerClient = healthCheckerClient;
         this.scheduler = new ScheduledThreadPoolExecutor(1);
-        this.scheduler.schedule(new Runnable() {
+        this.scheduler.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 checkHealth();
             }
-        }, 5, TimeUnit.SECONDS);
+        }, 5, checkInterval, TimeUnit.SECONDS);
     }
 
     private void checkHealth() {
