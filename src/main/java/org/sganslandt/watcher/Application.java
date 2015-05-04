@@ -6,10 +6,11 @@ import io.dropwizard.jdbi.DBIFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.dropwizard.views.ViewBundle;
+import org.sganslandt.watcher.api.events.NodeAddedEvent;
+import org.sganslandt.watcher.api.events.ServiceAddedEvent;
+import org.sganslandt.watcher.api.viewmodels.SystemViewModel;
 import org.sganslandt.watcher.core.ServiceDAO;
 import org.sganslandt.watcher.core.TableUpdater;
-import org.sganslandt.watcher.core.events.NodeAddedEvent;
-import org.sganslandt.watcher.core.events.ServiceAddedEvent;
 import org.sganslandt.watcher.external.JerseyHealthCheckerClient;
 import org.sganslandt.watcher.resources.SystemResource;
 import org.skife.jdbi.v2.DBI;
@@ -52,13 +53,15 @@ public class Application extends io.dropwizard.Application<Configuration> {
 
         // Setup the System
         final org.sganslandt.watcher.core.System system = configuration.getSystem().build(healthCheckerClient, eventBus);
+        SystemViewModel systemViewModel = new SystemViewModel(configuration.getSystem().getSystemName());
 
         // The Jersey Resource
-        final SystemResource healthResource = new SystemResource(system, configuration.getViewSettings());
+        final SystemResource healthResource = new SystemResource(system, systemViewModel, configuration.getViewSettings());
 
         // Subscribe (almost) everything to the EventBus
         eventBus.register(system);
         eventBus.register(healthResource);
+        eventBus.register(systemViewModel);
 
         // "Replay" state to everyone
         replay(dao, eventBus);

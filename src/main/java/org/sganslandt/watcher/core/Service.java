@@ -4,25 +4,26 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.sganslandt.watcher.core.events.NodeAddedEvent;
-import org.sganslandt.watcher.core.events.NodeRemovedEvent;
+import org.sganslandt.watcher.api.events.NodeAddedEvent;
+import org.sganslandt.watcher.api.events.NodeHealthChangedEvent;
+import org.sganslandt.watcher.api.events.NodeRemovedEvent;
+import org.sganslandt.watcher.api.events.ServiceStateChangedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static com.google.common.collect.Collections2.filter;
 import static com.google.common.collect.Collections2.transform;
 
 public final class Service {
-    @Getter
+    @Getter(AccessLevel.PACKAGE)
     private final String serviceName;
-    @Getter
-    private final List<Node> nodes;
+    private List<Node> nodes;
+    private Map<String, Node.State> nodeStates;
+    private State state;
 
     private final HealthCheckerClient healthCheckerClient;
     private final EventBus eventBus;
@@ -30,11 +31,13 @@ public final class Service {
     public Service(String serviceName, final HealthCheckerClient healthCheckerClient, EventBus eventBus) {
         this.serviceName = serviceName;
         this.healthCheckerClient = healthCheckerClient;
+        this.state = State.Unknown;
         this.nodes = new LinkedList<>();
+        this.nodeStates = new HashMap<>();
         this.eventBus = eventBus;
     }
 
-    public State getState() {
+    private State resolveState() {
         if (nodes.isEmpty())
             return Service.State.Absent;
         else {
@@ -48,7 +51,7 @@ public final class Service {
                 return Service.State.Absent;
 
             for (Node node : activeNodes) {
-                if (node.getState() != Node.State.Healthy)
+                if (nodeStates.get(node.getUrl()) != Node.State.Healthy)
                     return Service.State.Unhealthy;
             }
 
@@ -61,6 +64,12 @@ public final class Service {
             return;
 
         eventBus.post(new NodeAddedEvent(serviceName, url));
+    }
+
+    private void updateServiceState() {
+        State newState = resolveState();
+        if (newState != state)
+            eventBus.post(new ServiceStateChangedEvent(serviceName, newState));
     }
 
     public void stopMonitoring() {
@@ -80,14 +89,31 @@ public final class Service {
     @Subscribe
     public void handle(final NodeAddedEvent event) {
         if (event.getServiceName().equals(serviceName)) {
-            Node node = new Node(event.getNodeUrl(), Node.Role.Active, healthCheckerClient, eventBus);
+            Node node = new Node(serviceName, event.getNodeUrl(), Node.Role.Active, healthCheckerClient, eventBus);
             nodes.add(node);
+            nodeStates.put(event.getNodeUrl(), Node.State.Unknown);
             eventBus.register(node);
+            updateServiceState();
         }
     }
 
     @Subscribe
+    public void handle(final NodeHealthChangedEvent event) {
+        if (event.getServiceName().equals(serviceName)) {
+            nodeStates.put(event.getNodeUrl(), event.getState());
+            eventBus.post(new ServiceStateChangedEvent(serviceName, resolveState()));
+            updateServiceState();
+        }
+    }
+
+    @Subscribe
+    public void handle(final ServiceStateChangedEvent event) {
+        state = event.getState();
+    }
+
+    @Subscribe
     public void handle(final NodeRemovedEvent event) {
+        nodeStates.remove(event.getUrl());
         Iterator<Node> iterator = nodes.iterator();
         while (iterator.hasNext()) {
             Node node = iterator.next();
@@ -95,6 +121,7 @@ public final class Service {
                 node.stop();
                 iterator.remove();
                 eventBus.unregister(node);
+                updateServiceState();
             }
         }
     }

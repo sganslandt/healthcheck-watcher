@@ -1,10 +1,10 @@
 package org.sganslandt.watcher.core;
 
 import com.google.common.eventbus.Subscribe;
-import org.sganslandt.watcher.core.events.NodeAddedEvent;
-import org.sganslandt.watcher.core.events.NodeRemovedEvent;
-import org.sganslandt.watcher.core.events.ServiceAddedEvent;
-import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.api.events.NodeAddedEvent;
+import org.sganslandt.watcher.api.events.NodeRemovedEvent;
+import org.sganslandt.watcher.api.events.ServiceAddedEvent;
+import org.sganslandt.watcher.api.events.ServiceRemovedEvent;
 
 public class TableUpdater {
 

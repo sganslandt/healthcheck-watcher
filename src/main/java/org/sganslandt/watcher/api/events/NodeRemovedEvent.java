@@ -1,4 +1,4 @@
-package org.sganslandt.watcher.core.events;
+package org.sganslandt.watcher.api.events;
 
 import lombok.Data;
 

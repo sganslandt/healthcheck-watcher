@@ -10,22 +10,21 @@ import io.dropwizard.setup.Environment;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sganslandt.watcher.core.ServiceDAO;
-import org.sganslandt.watcher.core.events.NodeAddedEvent;
-import org.sganslandt.watcher.core.events.NodeRemovedEvent;
-import org.sganslandt.watcher.core.events.ServiceAddedEvent;
-import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.api.events.*;
+import org.sganslandt.watcher.core.*;
+import org.sganslandt.watcher.core.System;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 
-public class NodeManagementTest {
+public class NodeViewModelManagementTest {
     private final Environment environment = new Environment("", new ObjectMapper(), null, new MetricRegistry(), Object.class.getClassLoader());
     private final Configuration config = new Configuration();
     private final HealthCheckerClient healthCheckerClient = mock(HealthCheckerClient.class);
     private org.sganslandt.watcher.core.System system;
     private RecordingEventBus recordingEventBus;
+    private String systemName;
 
     @Before
     public void setup() throws Exception {
@@ -48,7 +47,8 @@ public class NodeManagementTest {
         recordingEventBus = new RecordingEventBus(eventBus);
         eventBus.register(recordingEventBus);
 
-        system = new org.sganslandt.watcher.core.System("testSystem", healthCheckerClient, recordingEventBus);
+        systemName = "testSystem";
+        system = new org.sganslandt.watcher.core.System(systemName, healthCheckerClient, recordingEventBus);
         recordingEventBus.register(system);
     }
 
@@ -64,7 +64,10 @@ public class NodeManagementTest {
         final String serviceName = "foo-service";
         system.addService(serviceName);
 
-        recordingEventBus.expectPublishedEvents(new ServiceAddedEvent(serviceName));
+        recordingEventBus.expectPublishedEvents(
+                new ServiceAddedEvent(serviceName),
+                new SystemStateChangedEvent(systemName, System.State.Healthy)
+        );
 
         // Add it again, should not produce another event
         recordingEventBus.clearRecordedEvents();
@@ -82,7 +85,10 @@ public class NodeManagementTest {
 
         recordingEventBus.expectPublishedEvents(
                 new ServiceAddedEvent(serviceName),
-                new NodeAddedEvent(serviceName, url)
+                new SystemStateChangedEvent(systemName, System.State.Healthy),
+                new NodeAddedEvent(serviceName, url),
+                new ServiceStateChangedEvent(serviceName, Service.State.Unhealthy),
+                new SystemStateChangedEvent(systemName, System.State.Unhealthy)
         );
 
         // Add another node, only node is added

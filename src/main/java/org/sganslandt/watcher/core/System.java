@@ -3,8 +3,10 @@ package org.sganslandt.watcher.core;
 import com.google.common.base.Function;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import org.sganslandt.watcher.core.events.ServiceAddedEvent;
-import org.sganslandt.watcher.core.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.api.events.ServiceAddedEvent;
+import org.sganslandt.watcher.api.events.ServiceRemovedEvent;
+import org.sganslandt.watcher.api.events.ServiceStateChangedEvent;
+import org.sganslandt.watcher.api.events.SystemStateChangedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import java.util.*;
@@ -15,12 +17,14 @@ public class System {
     private final String systemName;
     private final HealthCheckerClient healthCheckerClient;
     private final List<Service> services;
+    private final Map<String, Service.State> serviceStates;
     private final EventBus eventBus;
 
     public System(final String systemName, final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
         this.systemName = systemName;
         this.healthCheckerClient = healthCheckerClient;
         this.services = new LinkedList<>();
+        this.serviceStates = new HashMap<>();
         this.eventBus = eventBus;
     }
 
@@ -77,23 +81,12 @@ public class System {
         eventBus.post(new ServiceRemovedEvent(serviceName));
     }
 
-    public State getState() {
+    private State resolveState() {
         for (Service s : services)
-            if (!EnumSet.of(Service.State.Absent, Service.State.Healthy).contains(s.getState()))
+            if (!EnumSet.of(Service.State.Absent, Service.State.Healthy).contains(serviceStates.get(s.getServiceName())))
                 return System.State.Unhealthy;
 
         return System.State.Healthy;
-    }
-
-    public String getSystemName() {
-        return systemName;
-    }
-
-    public List<Service> getServices() {
-        List<Service> services = new LinkedList<>();
-        services.addAll(this.services);
-        Collections.sort(services, byStateAndName());
-        return services;
     }
 
     public enum State {
@@ -101,14 +94,23 @@ public class System {
     }
 
     @Subscribe
-    public void handle(ServiceAddedEvent event) {
+    public void handle(final ServiceAddedEvent event) {
         Service service = new Service(event.getServiceName(), healthCheckerClient, eventBus);
         services.add(service);
+        serviceStates.put(event.getServiceName(), Service.State.Absent);
         eventBus.register(service);
+        eventBus.post(new SystemStateChangedEvent(systemName, resolveState()));
     }
 
     @Subscribe
-    public void handle(ServiceRemovedEvent event) {
+    public void handle(final ServiceStateChangedEvent event) {
+        serviceStates.put(event.getServiceName(), event.getState());
+        eventBus.post(new SystemStateChangedEvent(systemName, resolveState()));
+    }
+
+    @Subscribe
+    public void handle(final ServiceRemovedEvent event) {
+        serviceStates.remove(event.getServiceName());
         Iterator<Service> iterator = services.iterator();
         while (iterator.hasNext()) {
             Service service = iterator.next();
@@ -117,6 +119,7 @@ public class System {
                 eventBus.unregister(service);
             }
         }
+        eventBus.post(new SystemStateChangedEvent(systemName, resolveState()));
     }
 
     private Service getService(String serviceName) {
@@ -136,38 +139,6 @@ public class System {
         };
     }
 
-    private Function<Node, String> toURL() {
-        return new Function<Node, String>() {
-            @Override
-            public String apply(final Node input) {
-                return input.getUrl();
-            }
-        };
-    }
 
-    private static Comparator<Service> byStateAndName() {
-        return new Comparator<Service>() {
-            @Override
-            public int compare(final Service o1, final Service o2) {
-                if (o1.getState() == o2.getState())
-                    return o1.getServiceName().compareTo(o2.getServiceName());
-
-                return getStateOrder(o1.getState()).compareTo(getStateOrder(o2.getState()));
-            }
-
-            private Integer getStateOrder(final Service.State state) {
-                switch (state) {
-                    case Absent:
-                        return 5;
-                    case Healthy:
-                        return 4;
-                    case Unhealthy:
-                        return 0;
-                    default:
-                        return -1;
-                }
-            }
-        };
-    }
 
 }

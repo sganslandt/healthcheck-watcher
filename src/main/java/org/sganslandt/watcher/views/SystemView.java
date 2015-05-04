@@ -2,19 +2,21 @@ package org.sganslandt.watcher.views;
 
 import io.dropwizard.views.View;
 import org.sganslandt.watcher.ViewSettings;
+import org.sganslandt.watcher.api.viewmodels.SystemViewModel;
 
 public class SystemView extends View {
-    private final org.sganslandt.watcher.core.System system;
+
+    private final SystemViewModel systemViewModel;
     private final ViewSettings viewSettings;
 
-    public SystemView(final org.sganslandt.watcher.core.System system, ViewSettings viewSettings) {
+    public SystemView(final SystemViewModel systemViewModel, ViewSettings viewSettings) {
         super("system.ftl");
-        this.system = system;
         this.viewSettings = viewSettings;
+        this.systemViewModel = systemViewModel;
     }
 
-    public org.sganslandt.watcher.core.System getSystem() {
-        return system;
+    public SystemViewModel getSystem() {
+        return systemViewModel;
     }
 
     public ViewSettings getSettings() {

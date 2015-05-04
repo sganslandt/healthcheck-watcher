@@ -3,15 +3,15 @@ package org.sganslandt.watcher.core;
 import com.google.common.base.Function;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.sganslandt.watcher.core.events.NodeHealthChangedEvent;
+import org.sganslandt.watcher.api.events.NodeHealthChangedEvent;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import javax.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -19,22 +19,20 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
 
 public final class Node {
-    @Getter
-    private final String id;
-    @Getter
+    private final String serviceName;
+    @Getter(AccessLevel.PACKAGE)
     private final String url;
-    @Getter
-    private final Role role;
-    @Getter
-    private final List<Health> healths;
+    @Getter(AccessLevel.PACKAGE)
+    private Role role;
+    private List<Health> healths;
 
     private final ScheduledThreadPoolExecutor scheduler;
     private final HealthCheckerClient healthCheckerClient;
     private final EventBus eventBus;
 
-    public Node(String url, Role role, final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
+    public Node(String serviceName, String url, Role role, final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
         this.eventBus = eventBus;
-        this.id = UUID.randomUUID().toString();
+        this.serviceName = serviceName;
         this.url = url;
         this.role = role;
         this.healths = new LinkedList<>();
@@ -59,14 +57,14 @@ public final class Node {
         });
 
         if (!healths.containsAll(nodeHealths))
-            eventBus.post(new NodeHealthChangedEvent(url, nodeHealths));
+            eventBus.post(new NodeHealthChangedEvent(serviceName, url, resolveState(nodeHealths), nodeHealths));
     }
 
     void stop() {
         scheduler.shutdown();
     }
 
-    public State getState() {
+    private State resolveState(final List<Health> healths) {
         if (!healths.iterator().hasNext()) {
             return Node.State.Unknown;
         } else {
@@ -80,11 +78,9 @@ public final class Node {
 
     @Subscribe
     public void handle(final NodeHealthChangedEvent event) {
-        if (event.getServiceUrl().equals(url)) {
-            synchronized (healths) {
-                healths.clear();
-                healths.addAll(event.getHealths());
-            }
+        if (event.getNodeUrl().equals(url)) {
+            healths.clear();
+            healths.addAll(event.getHealths());
         }
     }
 
