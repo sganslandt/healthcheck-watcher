@@ -1,6 +1,5 @@
 package org.sganslandt.watcher.api.viewmodels;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 

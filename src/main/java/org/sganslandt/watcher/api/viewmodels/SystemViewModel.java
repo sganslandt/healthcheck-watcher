@@ -5,7 +5,6 @@ import jersey.repackaged.com.google.common.base.Function;
 import lombok.Getter;
 import org.sganslandt.watcher.api.events.*;
 import org.sganslandt.watcher.core.Health;
-import org.sganslandt.watcher.core.Service;
 
 import javax.annotation.Nullable;
 import java.util.*;

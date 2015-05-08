@@ -44,7 +44,7 @@ public final class Node {
             public void run() {
                 checkHealth();
             }
-        }, 5, checkInterval, TimeUnit.SECONDS);
+        }, 0, checkInterval, TimeUnit.SECONDS);
     }
 
     private void checkHealth() {

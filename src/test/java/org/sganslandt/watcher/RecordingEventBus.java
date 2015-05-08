@@ -7,7 +7,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-class RecordingEventBus extends EventBus {
+public class RecordingEventBus extends EventBus {
 
     private final List<Object> recordedEvents = new LinkedList<>();
     private final EventBus delegate;
@@ -23,22 +23,25 @@ class RecordingEventBus extends EventBus {
     }
 
     @Override
-    public void register(Object o) {
-        this.delegate.register(o);
+    public void register(Object  object) {
+        this.delegate.register(object);
+    }
+
+    @Override
+    public void unregister(Object object) {
+        this.delegate.unregister(object);
     }
 
     public void clearRecordedEvents() {
         this.recordedEvents.clear();
     }
 
-    public List<Object> getRecordedEvents() {
-        return this.recordedEvents;
-    }
+    public void expectPublishedEvents(Object... expectedEvents) {
+        assertEquals("Wrong events seem to have been published. " + recordedEvents,
+                expectedEvents.length, recordedEvents.size());
 
-    public void expectPublishedEvents(Object... events) {
-        assertEquals(events.length, recordedEvents.size());
-        for (int i = 0; i != events.length; i++)
-            assertEquals("Unexpected event at position " + i, events[i], recordedEvents.get(i));
+        for (int i = 0; i != expectedEvents.length ; i++)
+            assertEquals("Unexpected event at position " + i, expectedEvents[i], recordedEvents.get(i));
     }
 
     public void expectNoPublishedEvents() {
