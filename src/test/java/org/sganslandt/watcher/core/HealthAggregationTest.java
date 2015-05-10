@@ -5,7 +5,6 @@ import com.google.common.eventbus.EventBus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.sganslandt.watcher.Configuration;
 import org.sganslandt.watcher.TestFixture;
 import org.sganslandt.watcher.api.events.*;
 import org.sganslandt.watcher.external.Health;
@@ -19,6 +18,9 @@ import static org.mockito.Mockito.*;
 
 public class HealthAggregationTest {
 
+    public static final int TEST_SLEEP = 50;
+    public static final int CHECK_INTERVAL = 10;
+
     private final HealthCheckerClient healthCheckerClient = mock(HealthCheckerClient.class);
     private String systemName;
     private TestFixture fixture;
@@ -31,7 +33,7 @@ public class HealthAggregationTest {
         eventBus = fixture.getEventBus();
 
         systemName = "testSystem";
-        system = new System(systemName, healthCheckerClient, 10, eventBus);
+        system = new System(systemName, healthCheckerClient, CHECK_INTERVAL, eventBus);
         eventBus.register(system);
     }
 
@@ -60,7 +62,7 @@ public class HealthAggregationTest {
             @Override
             public void run() {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(TEST_SLEEP);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -94,7 +96,7 @@ public class HealthAggregationTest {
             @Override
             public void run() {
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(TEST_SLEEP);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

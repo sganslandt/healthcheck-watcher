@@ -2,8 +2,6 @@ package org.sganslandt.watcher;
 
 import com.google.common.eventbus.EventBus;
 
-import static org.junit.Assert.assertEquals;
-
 public class TestFixture {
 
     private final RecordingEventBus eventBus;
