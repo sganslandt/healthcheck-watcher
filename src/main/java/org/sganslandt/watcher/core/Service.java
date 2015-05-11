@@ -103,7 +103,6 @@ public final class Service {
     public void handle(final NodeHealthChangedEvent event) {
         if (event.getServiceName().equals(serviceName)) {
             nodeStates.put(event.getNodeUrl(), event.getState());
-            eventBus.post(new ServiceStateChangedEvent(serviceName, resolveState()));
             updateServiceState();
         }
     }

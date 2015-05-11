@@ -22,7 +22,7 @@ eventBus:
 
 system:
   name: vagrant
-  checkInterval: 5
+  checkInterval: 5000
 
 viewSettings:
   refreshInterval: 15

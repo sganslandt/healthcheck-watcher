@@ -21,6 +21,8 @@ public class System {
     private final Map<String, Service.State> serviceStates;
     private final EventBus eventBus;
 
+    private State state;
+
     public System(final String systemName, final HealthCheckerClient healthCheckerClient, final int checkInterval, final EventBus eventBus) {
         this.systemName = systemName;
         this.healthCheckerClient = healthCheckerClient;
@@ -28,6 +30,7 @@ public class System {
         this.services = new LinkedList<>();
         this.serviceStates = new HashMap<>();
         this.eventBus = eventBus;
+        this.state = State.Healthy;
     }
 
     /**
@@ -101,13 +104,13 @@ public class System {
         services.add(service);
         serviceStates.put(event.getServiceName(), Service.State.Absent);
         eventBus.register(service);
-        eventBus.post(new SystemStateChangedEvent(systemName, resolveState()));
+        updateState();
     }
 
     @Subscribe
     public void handle(final ServiceStateChangedEvent event) {
         serviceStates.put(event.getServiceName(), event.getState());
-        eventBus.post(new SystemStateChangedEvent(systemName, resolveState()));
+        updateState();
     }
 
     @Subscribe
@@ -121,7 +124,19 @@ public class System {
                 eventBus.unregister(service);
             }
         }
-        eventBus.post(new SystemStateChangedEvent(systemName, resolveState()));
+
+        updateState();
+    }
+
+    @Subscribe
+    public void handle(final SystemStateChangedEvent event) {
+        this.state = event.getState();
+    }
+
+    private void updateState() {
+        State newState = resolveState();
+        if (newState != state)
+            eventBus.post(new SystemStateChangedEvent(systemName, newState));
     }
 
     private Service getService(String serviceName) {
@@ -140,7 +155,6 @@ public class System {
             }
         };
     }
-
 
 
 }

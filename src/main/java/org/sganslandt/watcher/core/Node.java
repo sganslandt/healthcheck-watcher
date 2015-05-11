@@ -19,6 +19,9 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.transform;
 
 public final class Node {
+
+    public static final int INITIAL_CHECK_DELAY = 1000;
+
     private final String serviceName;
     @Getter(AccessLevel.PACKAGE)
     private final String url;
@@ -44,7 +47,7 @@ public final class Node {
             public void run() {
                 checkHealth();
             }
-        }, 5, checkInterval, TimeUnit.SECONDS);
+        }, INITIAL_CHECK_DELAY, checkInterval, TimeUnit.MILLISECONDS);
     }
 
     private void checkHealth() {

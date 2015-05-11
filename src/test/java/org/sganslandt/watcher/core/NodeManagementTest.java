@@ -1,4 +1,4 @@
-package org.sganslandt.watcher;
+package org.sganslandt.watcher.core;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,15 +10,16 @@ import io.dropwizard.setup.Environment;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.sganslandt.watcher.Configuration;
+import org.sganslandt.watcher.EventBusFactory;
+import org.sganslandt.watcher.RecordingEventBus;
 import org.sganslandt.watcher.api.events.*;
-import org.sganslandt.watcher.core.*;
-import org.sganslandt.watcher.core.System;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 
-public class NodeViewModelManagementTest {
+public class NodeManagementTest {
     private final Environment environment = new Environment("", new ObjectMapper(), null, new MetricRegistry(), Object.class.getClassLoader());
     private final Configuration config = new Configuration();
     private final HealthCheckerClient healthCheckerClient = mock(HealthCheckerClient.class);
@@ -45,7 +46,6 @@ public class NodeViewModelManagementTest {
 
         final EventBus eventBus = config.getEventBus().build();
         recordingEventBus = new RecordingEventBus(eventBus);
-        eventBus.register(recordingEventBus);
 
         systemName = "testSystem";
         system = new org.sganslandt.watcher.core.System(systemName, healthCheckerClient, 5, recordingEventBus);
@@ -65,8 +65,7 @@ public class NodeViewModelManagementTest {
         system.addService(serviceName);
 
         recordingEventBus.expectPublishedEvents(
-                new ServiceAddedEvent(serviceName),
-                new SystemStateChangedEvent(systemName, System.State.Healthy)
+                new ServiceAddedEvent(serviceName)
         );
 
         // Add it again, should not produce another event
@@ -85,7 +84,6 @@ public class NodeViewModelManagementTest {
 
         recordingEventBus.expectPublishedEvents(
                 new ServiceAddedEvent(serviceName),
-                new SystemStateChangedEvent(systemName, System.State.Healthy),
                 new NodeAddedEvent(serviceName, url),
                 new ServiceStateChangedEvent(serviceName, Service.State.Unhealthy),
                 new SystemStateChangedEvent(systemName, System.State.Unhealthy)
@@ -139,6 +137,8 @@ public class NodeViewModelManagementTest {
         recordingEventBus.expectPublishedEvents(
                 new NodeRemovedEvent(serviceName, url),
                 new NodeRemovedEvent(serviceName, url2),
+                new ServiceStateChangedEvent(serviceName, Service.State.Absent),
+                new SystemStateChangedEvent(systemName, System.State.Healthy),
                 new ServiceRemovedEvent(serviceName)
         );
 
