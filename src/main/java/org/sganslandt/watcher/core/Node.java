@@ -20,7 +20,7 @@ import static com.google.common.collect.Lists.transform;
 
 public final class Node {
 
-    public static final int INITIAL_CHECK_DELAY = 1000;
+    public static final int INITIAL_CHECK_DELAY = 10;
 
     private final String serviceName;
     @Getter(AccessLevel.PACKAGE)
