@@ -9,9 +9,12 @@ import io.dropwizard.views.ViewBundle;
 import org.sganslandt.watcher.api.events.NodeAddedEvent;
 import org.sganslandt.watcher.api.events.ServiceAddedEvent;
 import org.sganslandt.watcher.api.viewmodels.SystemViewModel;
-import org.sganslandt.watcher.core.ServiceDAO;
-import org.sganslandt.watcher.core.TableUpdater;
+import org.sganslandt.watcher.core.health.ServiceDAO;
+import org.sganslandt.watcher.core.health.TableUpdater;
+import org.sganslandt.watcher.core.hooks.HooksDAO;
+import org.sganslandt.watcher.core.hooks.HooksManager;
 import org.sganslandt.watcher.external.JerseyHealthCheckerClient;
+import org.sganslandt.watcher.resources.HooksResource;
 import org.sganslandt.watcher.resources.SystemResource;
 import org.skife.jdbi.v2.DBI;
 
@@ -45,14 +48,16 @@ public class Application extends io.dropwizard.Application<Configuration> {
 
         // DB and TableUpdater
         final DBIFactory factory = new DBIFactory();
-        final DBI jdbi = factory.build(environment, configuration.getDataSourceFactory(), "servicesDataSource");
-        final ServiceDAO dao = jdbi.onDemand(ServiceDAO.class);
-        dao.createServicesTable();
-        dao.createURLsTable();
-        final TableUpdater tableUpdater = new TableUpdater(dao);
+        final DBI jdbi = factory.build(environment, configuration.getDataSourceFactory(), "watcherDataSource");
+        final ServiceDAO servicesDAO = jdbi.onDemand(ServiceDAO.class);
+        servicesDAO.createServicesTable();
+        servicesDAO.createURLsTable();
+        final TableUpdater tableUpdater = new TableUpdater(servicesDAO);
+        HooksDAO hooksDAO = jdbi.onDemand(HooksDAO.class);
+        hooksDAO.createTable();
 
         // Setup the System
-        final org.sganslandt.watcher.core.System system = configuration.getSystem().build(healthCheckerClient, eventBus);
+        final org.sganslandt.watcher.core.health.System system = configuration.getSystem().build(healthCheckerClient, eventBus);
         SystemViewModel systemViewModel = new SystemViewModel(configuration.getSystem().getSystemName());
 
         // The Jersey Resource
@@ -64,13 +69,18 @@ public class Application extends io.dropwizard.Application<Configuration> {
         eventBus.register(systemViewModel);
 
         // "Replay" state to everyone
-        replay(dao, eventBus);
+        replay(servicesDAO, eventBus);
 
         // Subscribe listeners that can't take replays...
         eventBus.register(tableUpdater);
 
+        // Setup notification system, post replay
+        HooksManager hooksManager = new HooksManager(hooksDAO, eventBus, client);
+        HooksResource hooksResource = new HooksResource(hooksManager);
+
         // Exprose the Jersey Resource
         environment.jersey().register(healthResource);
+        environment.jersey().register(hooksResource);
     }
 
     public void replay(final ServiceDAO dao, final EventBus eventBus) {

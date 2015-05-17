@@ -1,8 +1,8 @@
 package org.sganslandt.watcher.api.events;
 
 import lombok.Data;
-import org.sganslandt.watcher.core.Health;
-import org.sganslandt.watcher.core.Node;
+import org.sganslandt.watcher.core.health.Health;
+import org.sganslandt.watcher.core.health.Node;
 
 import java.util.List;
 

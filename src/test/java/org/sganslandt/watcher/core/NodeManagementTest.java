@@ -14,6 +14,8 @@ import org.sganslandt.watcher.Configuration;
 import org.sganslandt.watcher.EventBusFactory;
 import org.sganslandt.watcher.RecordingEventBus;
 import org.sganslandt.watcher.api.events.*;
+import org.sganslandt.watcher.core.health.*;
+import org.sganslandt.watcher.core.health.System;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 import static org.mockito.Mockito.mock;
@@ -23,7 +25,7 @@ public class NodeManagementTest {
     private final Environment environment = new Environment("", new ObjectMapper(), null, new MetricRegistry(), Object.class.getClassLoader());
     private final Configuration config = new Configuration();
     private final HealthCheckerClient healthCheckerClient = mock(HealthCheckerClient.class);
-    private org.sganslandt.watcher.core.System system;
+    private org.sganslandt.watcher.core.health.System system;
     private RecordingEventBus recordingEventBus;
     private String systemName;
 
@@ -48,7 +50,7 @@ public class NodeManagementTest {
         recordingEventBus = new RecordingEventBus(eventBus);
 
         systemName = "testSystem";
-        system = new org.sganslandt.watcher.core.System(systemName, healthCheckerClient, 5, recordingEventBus);
+        system = new System(systemName, healthCheckerClient, 5, recordingEventBus);
         recordingEventBus.register(system);
     }
 

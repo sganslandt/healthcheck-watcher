@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import jersey.repackaged.com.google.common.base.Function;
 import lombok.Getter;
 import org.sganslandt.watcher.api.events.*;
-import org.sganslandt.watcher.core.Health;
+import org.sganslandt.watcher.core.health.Health;
 
 import javax.annotation.Nullable;
 import java.util.*;

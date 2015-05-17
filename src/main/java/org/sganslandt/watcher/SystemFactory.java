@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.eventbus.EventBus;
 import lombok.Data;
+import org.sganslandt.watcher.core.health.System;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
 @Data
@@ -17,7 +18,7 @@ public class SystemFactory {
         this.checkInterval = checkInterval;
     }
 
-    public org.sganslandt.watcher.core.System build(final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
-        return new org.sganslandt.watcher.core.System(systemName, healthCheckerClient, checkInterval, eventBus);
+    public org.sganslandt.watcher.core.health.System build(final HealthCheckerClient healthCheckerClient, final EventBus eventBus) {
+        return new System(systemName, healthCheckerClient, checkInterval, eventBus);
     }
 }

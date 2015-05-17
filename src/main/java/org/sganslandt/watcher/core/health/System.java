@@ -1,4 +1,4 @@
-package org.sganslandt.watcher.core;
+package org.sganslandt.watcher.core.health;
 
 import com.google.common.base.Function;
 import com.google.common.eventbus.EventBus;

@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import org.sganslandt.watcher.ViewSettings;
 import org.sganslandt.watcher.api.viewmodels.ServiceViewModel;
 import org.sganslandt.watcher.api.viewmodels.SystemViewModel;
+import org.sganslandt.watcher.core.health.System;
 import org.sganslandt.watcher.views.SystemView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,11 +20,11 @@ public class SystemResource {
 
     private static final Logger log = LoggerFactory.getLogger(SystemResource.class);
 
-    private final org.sganslandt.watcher.core.System system;
+    private final org.sganslandt.watcher.core.health.System system;
     private final SystemViewModel systemViewModel;
     private final ViewSettings viewSettings;
 
-    public SystemResource(final org.sganslandt.watcher.core.System system, final SystemViewModel systemViewModel, final ViewSettings viewSettings) {
+    public SystemResource(final System system, final SystemViewModel systemViewModel, final ViewSettings viewSettings) {
         this.system = system;
         this.systemViewModel = systemViewModel;
         this.viewSettings = viewSettings;

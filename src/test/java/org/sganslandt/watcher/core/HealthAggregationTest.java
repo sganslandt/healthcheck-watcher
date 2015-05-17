@@ -7,6 +7,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.sganslandt.watcher.TestFixture;
 import org.sganslandt.watcher.api.events.*;
+import org.sganslandt.watcher.core.health.*;
+import org.sganslandt.watcher.core.health.System;
 import org.sganslandt.watcher.external.Health;
 import org.sganslandt.watcher.external.HealthCheckerClient;
 
@@ -25,7 +27,7 @@ public class HealthAggregationTest {
     private String systemName;
     private TestFixture fixture;
     private EventBus eventBus;
-    private System system;
+    private org.sganslandt.watcher.core.health.System system;
 
     @Before
     public void setup() throws Exception {
@@ -68,7 +70,7 @@ public class HealthAggregationTest {
                 }
             }
         }).expectedPublishEvents(
-                new NodeHealthChangedEvent(serviceName, url, Node.State.Healthy, Arrays.asList(new org.sganslandt.watcher.core.Health("foo", true, Optional.<String>absent()))),
+                new NodeHealthChangedEvent(serviceName, url, Node.State.Healthy, Arrays.asList(new org.sganslandt.watcher.core.health.Health("foo", true, Optional.<String>absent()))),
                 new ServiceStateChangedEvent(serviceName, Service.State.Healthy),
                 new SystemStateChangedEvent(systemName, System.State.Healthy)
         );
@@ -89,7 +91,7 @@ public class HealthAggregationTest {
                 new NodeAddedEvent(serviceName, url),
                 new ServiceStateChangedEvent(serviceName, Service.State.Unhealthy),
                 new SystemStateChangedEvent(systemName, System.State.Unhealthy),
-                new NodeHealthChangedEvent(serviceName, url, Node.State.Healthy, Arrays.asList(new org.sganslandt.watcher.core.Health("foo", true, Optional.<String>absent()))),
+                new NodeHealthChangedEvent(serviceName, url, Node.State.Healthy, Arrays.asList(new org.sganslandt.watcher.core.health.Health("foo", true, Optional.<String>absent()))),
                 new ServiceStateChangedEvent(serviceName, Service.State.Healthy),
                 new SystemStateChangedEvent(systemName, System.State.Healthy)
         ).when(new Runnable() {
@@ -102,7 +104,7 @@ public class HealthAggregationTest {
                 }
             }
         }).expectedPublishEvents(
-                new NodeHealthChangedEvent(serviceName, url, Node.State.Unhealthy, Arrays.asList(new org.sganslandt.watcher.core.Health("foo", false, Optional.of("bar")))),
+                new NodeHealthChangedEvent(serviceName, url, Node.State.Unhealthy, Arrays.asList(new org.sganslandt.watcher.core.health.Health("foo", false, Optional.of("bar")))),
                 new ServiceStateChangedEvent(serviceName, Service.State.Unhealthy),
                 new SystemStateChangedEvent(systemName, System.State.Unhealthy)
         );

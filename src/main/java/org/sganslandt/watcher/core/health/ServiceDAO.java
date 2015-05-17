@@ -1,4 +1,4 @@
-package org.sganslandt.watcher.core;
+package org.sganslandt.watcher.core.health;
 
 import org.skife.jdbi.v2.sqlobject.Bind;
 import org.skife.jdbi.v2.sqlobject.SqlQuery;
