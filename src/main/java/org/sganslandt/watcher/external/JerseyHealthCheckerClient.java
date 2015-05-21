@@ -23,7 +23,7 @@ public class JerseyHealthCheckerClient implements HealthCheckerClient {
     public Map<String, Health> check(String url) {
         try {
             return client
-                    .target(url).path("/health")
+                    .target(url).path("/healthcheck")
                     .request().get()
                     .readEntity(new GenericType<HashMap<String, Health>>() {});
         } catch (ProcessingException e) {
