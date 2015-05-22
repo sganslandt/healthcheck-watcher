@@ -9,9 +9,11 @@ import javax.ws.rs.core.GenericType;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 public class JerseyHealthCheckerClient implements HealthCheckerClient {
 
-    private static final Logger log = LoggerFactory.getLogger(JerseyHealthCheckerClient.class);
+    private static final Logger log = getLogger(JerseyHealthCheckerClient.class);
 
     private final Client client;
 
@@ -22,11 +24,16 @@ public class JerseyHealthCheckerClient implements HealthCheckerClient {
     @Override
     public Map<String, Health> check(String url) {
         try {
-            return client
+            log.debug("Checking health of {}", url);
+            HashMap<String, Health> healths = client
                     .target(url).path("/healthcheck")
                     .request().get()
-                    .readEntity(new GenericType<HashMap<String, Health>>() {});
+                    .readEntity(new GenericType<HashMap<String, Health>>() {
+                    });
+            log.debug("Received healths {}: {}", url, healths);
+            return healths;
         } catch (ProcessingException e) {
+            log.debug("Failed to read the health of " + url, e);
             return healthFromThrowable(e);
         } catch (Throwable t) {
             log.warn("Failed to read the health.", t);

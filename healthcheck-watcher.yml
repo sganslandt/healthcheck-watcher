@@ -1,5 +1,5 @@
 httpClient:
-  timeout: 500ms
+  timeout: 5000ms
   connectionTimeout: 500ms
   timeToLive: 1h
   cookiesEnabled: false
@@ -26,3 +26,8 @@ system:
 
 viewSettings:
   refreshInterval: 15
+
+logging:
+  level: INFO
+  loggers:
+    "org.sganslandt.watcher.external.JerseyHealthCheckerClient": DEBUG
