@@ -28,7 +28,7 @@
 <div class="container-fluid">
     <div class="row">
     <#list system.services as service>
-        <div class="col-md-3">
+        <div class="col-md-${settings.columnWidth}">
             <#assign panelClass>
                 <#if service.state = "Healthy">panel-success</#if>
                 <#if service.state = "Absent">panel-warning</#if>

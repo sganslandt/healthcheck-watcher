@@ -26,6 +26,7 @@ system:
 
 viewSettings:
   refreshInterval: 15
+  columns: 3
 
 logging:
   level: INFO
