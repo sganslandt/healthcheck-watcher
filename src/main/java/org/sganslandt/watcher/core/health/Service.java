@@ -109,7 +109,8 @@ public final class Service {
 
     @Subscribe
     public void handle(final ServiceStateChangedEvent event) {
-        state = event.getState();
+        if (event.getServiceName().equals(serviceName))
+            state = event.getState();
     }
 
     @Subscribe
